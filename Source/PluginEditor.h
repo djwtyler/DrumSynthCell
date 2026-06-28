@@ -157,6 +157,7 @@ private:
     std::array<juce::TextButton, DrumSynth::NumChannels> advChanBtns;
 
     // == OSC section ==
+    juce::Slider       pitchKnob;
     juce::Slider      oscShapeKnob;
     juce::ToggleButton metallicBtn  { "Metallic Cluster" };
 
@@ -198,10 +199,10 @@ private:
     juce::ComboBox     fx1TypeBox;
     juce::Slider       fx1AmtKnob, bitDepthKnob;
 
-    // Per-knob name labels for advanced view (27 total, ordered by panel)
-    // OSC:0-4  NOISE:5-8  DRIVE:9  FILTER:10-11
-    // ENV:12-20  LFO:21-24  FX:25-26
-    juce::Label advLbl[27];
+    // Per-knob name labels for advanced view (28 total, ordered by panel)
+    // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
+    // ENV:13-21  LFO:22-25  FX:26-27
+    juce::Label advLbl[28];
 
     // ---------------------------------------------------------------
     // Layout constants

@@ -33,6 +33,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupCombo (fx1TypeBox,    { "Off", "Soft Clip", "Hard Clip", "Bitcrusher", "Wavefold" });
 
     // Knob ranges
+    setupKnob (pitchKnob,       20.0, 2000.0, 80.0, " Hz");
     setupKnob (oscShapeKnob,    0.0,  1.0,  0.0);
     setupKnob (partPeakKnob,    1.0,  8.0,  1.0);
     setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
@@ -168,6 +169,7 @@ void DrumSynthEditor::buildAdvancedView()
     // (its text/callback is swapped in showAdvancedView/showBasicView)
 
     // OSC
+    addChildComponent (pitchKnob);
     addChildComponent (oscShapeKnob);
     addChildComponent (metallicBtn);
     addChildComponent (shaperEnabledBtn);
@@ -220,18 +222,18 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (bitDepthKnob);
 
     // Per-knob labels for advanced view
-    static const char* kAdvLblText[27] = {
-        "Shape", "Peak", "Space", "Roll", "Decay",          // OSC 0-4
-        "Level", "Decay", "BP Freq", "BP Q",                // NOISE 5-8
-        "Amount",                                            // DRIVE 9
-        "Cutoff", "Res",                                     // FILTER 10-11
-        "P Depth", "P Decay",                               // Pitch env 12-13
-        "F Att", "F Hold", "F Decay", "F Depth",            // Filter env 14-17
-        "A Att", "A Hold", "A Decay",                       // Amp env 18-20
-        "Rate", "Depth", "Rate", "Depth",                   // LFO1/2 21-24
-        "Amount", "Bit Dep"                                  // FX 25-26
+    static const char* kAdvLblText[28] = {
+        "Pitch", "Shape", "Peak", "Space", "Roll", "Decay", // OSC 0-5
+        "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
+        "Amount",                                            // DRIVE 10
+        "Cutoff", "Res",                                     // FILTER 11-12
+        "P Depth", "P Decay",                               // Pitch env 13-14
+        "F Att", "F Hold", "F Decay", "F Depth",            // Filter env 15-18
+        "A Att", "A Hold", "A Decay",                       // Amp env 19-21
+        "Rate", "Depth", "Rate", "Depth",                   // LFO1/2 22-25
+        "Amount", "Bit Dep"                                  // FX 26-27
     };
-    for (int i = 0; i < 27; ++i)
+    for (int i = 0; i < 28; ++i)
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
@@ -287,7 +289,7 @@ void DrumSynthEditor::showBasicView()
     for (auto& b : advChanBtns) b.setVisible (false);
     for (auto& b : modSrcBtns)  b.setVisible (false);
     for (auto* c : std::initializer_list<juce::Component*> {
-                     &oscShapeKnob, &metallicBtn, &shaperEnabledBtn,
+                     &pitchKnob, &oscShapeKnob, &metallicBtn, &shaperEnabledBtn,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
@@ -322,7 +324,7 @@ void DrumSynthEditor::showAdvancedView()
     for (auto& b : advChanBtns) b.setVisible (false);
     for (auto& b : modSrcBtns)  b.setVisible (true);
     for (auto* c : std::initializer_list<juce::Component*> {
-                     &oscShapeKnob, &metallicBtn, &shaperEnabledBtn,
+                     &pitchKnob, &oscShapeKnob, &metallicBtn, &shaperEnabledBtn,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
@@ -415,21 +417,22 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kOscX + 8;
         int y = panelY + 54;
 
-        lbl (0, x, y + 22);
-        oscShapeKnob    .setBounds (x, y + 22, C, C);
+        lbl (0, x,         y + 22);  lbl (1, x + C + G, y + 22);
+        pitchKnob       .setBounds (x,         y + 22, C, C);
+        oscShapeKnob    .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 8;
         metallicBtn     .setBounds (x, y, kOscW - 14, 22);
         y += 30;
         shaperEnabledBtn.setBounds (x, y, kOscW - 14, 22);
         y += 30;
 
-        lbl (1, x,       y + 22);  lbl (2, x + C + G, y + 22);
-        partPeakKnob    .setBounds (x,       y + 22, C, C);
+        lbl (2, x,         y + 22);  lbl (3, x + C + G, y + 22);
+        partPeakKnob    .setBounds (x,         y + 22, C, C);
         partSpaceKnob   .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 8;
 
-        lbl (3, x,       y + 22);  lbl (4, x + C + G, y + 22);
-        partRollKnob    .setBounds (x,       y + 22, C, C);
+        lbl (4, x,         y + 22);  lbl (5, x + C + G, y + 22);
+        partRollKnob    .setBounds (x,         y + 22, C, C);
         partDecKnob     .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 8;
 
@@ -441,14 +444,14 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kNsX + 8;
         int y = panelY + 54;
 
-        lbl (5, x,       y + 22);  lbl (6, x + C + G, y + 22);
+        lbl (6, x,       y + 22);  lbl (7, x + C + G, y + 22);
         noiseLevelKnob  .setBounds (x,       y + 22, C, C);
         noiseDecKnob    .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 8;
         noisePinkBtn    .setBounds (x, y, kNsW - 14, 22);
         y += 30;
 
-        lbl (7, x,       y + 22);  lbl (8, x + C + G, y + 22);
+        lbl (8, x,       y + 22);  lbl (9, x + C + G, y + 22);
         noiseBPFreqKnob .setBounds (x,       y + 22, C, C);
         noiseBPQKnob    .setBounds (x + C + G, y + 22, C, C);
     }
@@ -458,7 +461,7 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kDrvX + 8;
         int y = panelY + 54;
         const int cx = x + (kDrvW - C - 16) / 2;
-        lbl (9, cx, y + 22);
+        lbl (10, cx, y + 22);
         driveAmtKnob.setBounds (cx, y + 22, C, C);
         y += 22 + C + 12;
         driveTypeBox.setBounds (x, y, kDrvW - 14, 26);
@@ -473,7 +476,7 @@ void DrumSynthEditor::layoutAdvancedView()
         filterModelBox.setBounds (x, y, (kFltW - 20) / 2, 26);
         filter4PoleBtn.setBounds (x + (kFltW - 20) / 2 + 8, y, (kFltW - 20) / 2, 26);
         y += 34;
-        lbl (10, x,       y + 22);  lbl (11, x + C + G, y + 22);
+        lbl (11, x,       y + 22);  lbl (12, x + C + G, y + 22);
         filterCutKnob .setBounds (x,       y + 22, C, C);
         filterResKnob .setBounds (x + C + G, y + 22, C, C);
     }
@@ -483,24 +486,24 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kEnvX + 8;
         int y = panelY + 54;
 
-        lbl (12, x,       y + 22);  lbl (13, x + C + G, y + 22);
+        lbl (13, x,       y + 22);  lbl (14, x + C + G, y + 22);
         pEnvDepthKnob.setBounds (x,       y + 22, C, C);
         pEnvDecKnob  .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 20;
 
-        lbl (14, x,       y + 22);  lbl (15, x + C + G, y + 22);
+        lbl (15, x,       y + 22);  lbl (16, x + C + G, y + 22);
         fEnvAttKnob  .setBounds (x,       y + 22, C, C);
         fEnvHoldKnob .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 6;
 
-        lbl (16, x,       y + 22);  lbl (17, x + C + G, y + 22);
+        lbl (17, x,       y + 22);  lbl (18, x + C + G, y + 22);
         fEnvDecKnob  .setBounds (x,       y + 22, C, C);
         fEnvDepthKnob.setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 20;
 
-        lbl (18, x,             y + 22);
-        lbl (19, x + C + G,     y + 22);
-        lbl (20, x + (C + G)*2, y + 22);
+        lbl (19, x,             y + 22);
+        lbl (20, x + C + G,     y + 22);
+        lbl (21, x + (C + G)*2, y + 22);
         ampAttKnob .setBounds (x,             y + 22, C, C);
         ampHoldKnob.setBounds (x + C + G,     y + 22, C, C);
         ampDecKnob .setBounds (x + (C + G)*2, y + 22, C, C);
@@ -511,14 +514,14 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kLfoX + 8;
         int y = panelY + 54;
 
-        lbl (21, x,       y + 22);  lbl (22, x + C + G, y + 22);
+        lbl (22, x,       y + 22);  lbl (23, x + C + G, y + 22);
         lfo1RateKnob .setBounds (x,       y + 22, C, C);
         lfo1DepthKnob.setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 6;
         lfo1WaveBox  .setBounds (x, y, kLfoW - 14, 26);
         y += 26 + 32;
 
-        lbl (23, x,       y + 22);  lbl (24, x + C + G, y + 22);
+        lbl (24, x,       y + 22);  lbl (25, x + C + G, y + 22);
         lfo2RateKnob .setBounds (x,       y + 22, C, C);
         lfo2DepthKnob.setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 6;
@@ -530,8 +533,8 @@ void DrumSynthEditor::layoutAdvancedView()
         const int sepY = kAdvH - kFxH;
         const int fxY  = sepY + 8;
         fx1TypeBox  .setBounds (8, fxY + 5, 160, 26);
-        lbl (25, 174,           fxY);
-        lbl (26, 174 + C + G,   fxY);
+        lbl (26, 174,           fxY);
+        lbl (27, 174 + C + G,   fxY);
         fx1AmtKnob  .setBounds (174,         fxY, C, C);
         bitDepthKnob.setBounds (174 + C + G, fxY, C, C);
     }
@@ -645,6 +648,7 @@ void DrumSynthEditor::refreshAdvanced()
     updatingUI = true;
     const auto& p = proc.getVoice (selectedChannel).params;
 
+    pitchKnob       .setValue (p.pitchHz,          juce::dontSendNotification);
     oscShapeKnob    .setValue (p.oscShape,        juce::dontSendNotification);
     metallicBtn     .setToggleState (p.metallic,          juce::dontSendNotification);
     shaperEnabledBtn.setToggleState (p.shaperEnabled,     juce::dontSendNotification);
@@ -718,6 +722,7 @@ void DrumSynthEditor::connectAdvancedControls()
 {
     using VP = DrumSynth::VoiceParams;
 
+    pitchKnob       .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.pitchHz        = float(pitchKnob.getValue()); };
     oscShapeKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.oscShape       = float(oscShapeKnob.getValue()); };
     metallicBtn     .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.metallic       = metallicBtn.getToggleState(); };
     shaperEnabledBtn.onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.shaperEnabled  = shaperEnabledBtn.getToggleState(); };
