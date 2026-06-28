@@ -1,0 +1,334 @@
+# DrumSynthCell — User Guide
+
+DrumSynthCell is a hybrid drum synthesizer audio plugin built with the JUCE framework. It generates all sounds via synthesis — no sample packs. Eight independent channels cover the full classic drum machine palette: kick, snare, clap, toms, hats, and cymbal.
+
+---
+
+## Building and Running
+
+```bash
+# Configure (first time only — resolves JUCE from ../JUCE-framework)
+cmake . -B build -DCMAKE_BUILD_TYPE=Debug
+
+# Standalone app
+cmake --build build --target DrumSynthCell_Standalone
+
+# Plugin formats
+cmake --build build --target DrumSynthCell_VST3
+cmake --build build --target DrumSynthCell_AU
+
+# Launch the standalone
+open build/Source/DrumSynthCell_artefacts/Debug/Standalone/DrumSynthCell.app
+```
+
+---
+
+## MIDI Note Mapping
+
+Each channel is triggered by a dedicated MIDI note. Velocity is passed through to the voice engine.
+
+| Channel     | MIDI Note | Note Name |
+|-------------|-----------|-----------|
+| Kick        | 36        | C2        |
+| Snare       | 38        | D2        |
+| Clap        | 39        | D#2       |
+| Tom 1       | 41        | F2        |
+| Tom 2       | 43        | G2        |
+| Closed Hat  | 42        | F#2       |
+| Open Hat    | 46        | A#2       |
+| Cymbal      | 49        | C#3       |
+
+---
+
+## Choke Groups
+
+Channels can be assigned to choke groups A, B, or C. When a channel in group X is triggered, all other active channels in group X are immediately silenced with a 2 ms fade. This is how a closed hi-hat cuts off an open hi-hat.
+
+---
+
+## Views
+
+The plugin has two views toggled with the **Basic / Advanced** button in the header.
+
+---
+
+## Basic View
+
+The basic view gives fast access to the most important parameters for each channel.
+
+### Pad Grid
+
+Eight pads arranged in a 4×2 grid (80×80 px each). Click a pad to select that channel. The selected pad highlights in teal. Pads also respond to the active MIDI note — they light up on incoming hits.
+
+Pad order (left to right, top to bottom):
+Kick → Snare → Clap → Tom 1 → Tom 2 → Closed Hat → Open Hat → Cymbal
+
+### Macro Knobs
+
+Eight macro knobs below the pads, each controlling the most significant parameter for the selected channel.
+
+| Knob       | Parameter         | Range              |
+|------------|-------------------|--------------------|
+| Tune       | Pitch (Hz)        | 20 – 800 Hz        |
+| Pitch Env  | Pitch env depth   | 0 – 48 semitones   |
+| Attack     | Amp attack        | 0.001 – 1 s        |
+| Decay      | Amp decay         | 0.001 – 8 s        |
+| Volume     | Output gain       | 0 – 1              |
+| Noise      | Noise level       | 0 – 1              |
+| Flt Cut    | Filter cutoff     | 20 – 20 000 Hz     |
+| Resonance  | Filter resonance  | 0 – 1              |
+
+---
+
+## Advanced View
+
+The advanced view exposes every synthesis parameter, laid out in labeled sections across the full window width.
+
+Selecting a pad in the advanced view switches the channel the same as in basic view — all controls update to reflect the selected channel's current state.
+
+The TransMod source buttons appear to the right of the pad grid.
+
+---
+
+### OSC Section
+
+Controls the main oscillator.
+
+| Control         | Description                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| Shape           | Continuous morph: Sine → Saw → Square → Triangle                            |
+| Metallic        | Replaces the single oscillator with 6 detuned squares at inharmonic ratios (808-style metallic cluster for hats/cymbals) |
+| Partial Shaper  | Enables the harmonic partial engine (8 partials, replaces the single osc)   |
+| Membrane        | Selects inharmonic Bessel ratios (drumskin physics) vs integer harmonics    |
+| Peak            | Which partial (1–8) receives maximum spectral weight                        |
+| Space           | Stretches partial frequency spacing (0 = unison, 0.5 = natural, 1 = stretched) |
+| Roll            | Spectral rolloff rate away from the peak partial                            |
+| Decay           | Differential decay — higher partials fade faster; 0 = equal decay, 1 = 5× faster per octave |
+
+#### Oscillator Modes (mutually exclusive)
+
+- **Single osc** (default): Shape knob morphs waveform continuously.
+- **Metallic Cluster**: Six detuned square oscillators at ratios 1.000, 1.483, 2.000, 2.501, 2.999, 3.501 relative to the base pitch. Used for 808 hats and cymbals.
+- **Partial Shaper**: Eight-partial additive engine. The spectral envelope is set by Peak + Roll; partials decay differentially using the Decay control; Membrane selects the frequency grid.
+
+---
+
+### NOISE Section
+
+An independent noise generator mixed with the oscillator signal.
+
+| Control   | Description                                              | Range          |
+|-----------|----------------------------------------------------------|----------------|
+| Level     | Noise mix level (TransMod target)                        | 0 – 1          |
+| Decay     | Exponential noise envelope decay time                    | 0.001 – 4 s    |
+| BP Freq   | Bandpass centre frequency for noise colouring            | 20 – 18 000 Hz |
+| BP Q      | Bandpass Q (width) — higher values narrow the band       | 0.1 – 20       |
+| Pink      | Switches noise colour from white to pink (–3 dB/octave) |                |
+
+The noise always has its own fast exponential envelope (instant attack). The Level is also a TransMod target.
+
+---
+
+### DRIVE Section
+
+Pre-filter saturation/distortion applied to the mixed osc + noise signal.
+
+| Control | Description                          | Range |
+|---------|--------------------------------------|-------|
+| Amount  | Drive amount (TransMod target)       | 0 – 1 |
+| Type    | Distortion algorithm                 |       |
+
+Drive types:
+- **Soft Clip** — tanh saturation; smooth harmonic warmth
+- **Hard Clip** — brickwall limiter; aggressive edge
+- **Wavefold** — signal folds back on itself; complex harmonic content at high amounts
+
+---
+
+### FILTER Section
+
+A two-stage state-variable filter (SVF, Chamberlin topology) placed after the drive.
+
+| Control   | Description                                         | Range          |
+|-----------|-----------------------------------------------------|----------------|
+| Mode      | LP / HP / BP / Peak / Notch                         |                |
+| Model     | Clean or Fat (reserved for future alternate topology) |               |
+| 4-pole    | Chains two SVF stages for steeper 4-pole response   |                |
+| Cutoff    | Filter cutoff frequency (TransMod target)           | 20 – 20 000 Hz |
+| Resonance | Filter Q (TransMod target)                          | 0 – 1          |
+
+The filter envelope and LFO 2 modulate cutoff additively in semitones.
+
+---
+
+### ENVELOPES Section
+
+Three AHD (Attack – Hold – Decay) envelopes per voice.
+
+#### Pitch Envelope (fast, transient)
+
+| Control | Description                   | Range         |
+|---------|-------------------------------|---------------|
+| Depth   | Pitch shift at envelope peak  | 0 – 48 semitones |
+| Decay   | Exponential fall time         | 0.001 – 2 s   |
+
+Attack is fixed at 1 ms. Creates the characteristic pitch drop on kicks and toms.
+
+#### Filter Envelope (slow)
+
+| Control | Description                              | Range       |
+|---------|------------------------------------------|-------------|
+| Attack  | Filter env attack time                   | 0 – 2 s     |
+| Hold    | Filter env hold time at peak             | 0 – 2 s     |
+| Decay   | Filter env decay time                    | 0 – 8 s     |
+| Depth   | Cutoff modulation depth at envelope peak | –96 – +96 semitones |
+
+#### Amp Envelope (VCA)
+
+| Control | Description               | Range        |
+|---------|---------------------------|--------------|
+| Attack  | VCA attack time           | 0.001 – 1 s  |
+| Hold    | VCA hold time at peak     | 0 – 2 s      |
+| Decay   | VCA decay time (TransMod target) | 0.001 – 8 s |
+
+The voice stays active until the amp envelope reaches silence. The `isActive()` state is driven entirely by this envelope.
+
+---
+
+### LFO Section
+
+Two LFOs per voice, running continuously and reset to phase 0 on each trigger.
+
+#### LFO 1 → Pitch FM
+
+| Control | Description              | Range        |
+|---------|--------------------------|--------------|
+| Rate    | LFO frequency            | 0.01 – 20 Hz |
+| Depth   | FM depth in semitones    | 0 – 24       |
+| Wave    | Sine / Triangle / Square / Saw Up / Saw Down |  |
+
+#### LFO 2 → Filter cutoff
+
+| Control | Description              | Range        |
+|---------|--------------------------|--------------|
+| Rate    | LFO frequency            | 0.01 – 20 Hz |
+| Depth   | Cutoff modulation depth in semitones | 0 – 96 |
+| Wave    | Sine / Triangle / Square / Saw Up / Saw Down |  |
+
+Both LFOs contribute to the TransMod snapshot at each block boundary (see TransMod section).
+
+---
+
+### FX Section
+
+A post-filter distortion/effect slot with selectable algorithm.
+
+| Control   | Description                                      | Range    |
+|-----------|--------------------------------------------------|----------|
+| Type      | Off / Soft Clip / Hard Clip / Bitcrusher / Wavefold |       |
+| Amount    | Drive gain for clip/fold algorithms              | 0 – 1    |
+| Bit Depth | Quantisation depth for Bitcrusher                | 1 – 24 bits |
+
+When Type is Off, the section has no effect on the signal. The Bitcrusher reduces bit depth without resampling — it quantises the amplitude at the current sample rate.
+
+---
+
+## TransMod System
+
+TransMod is a visual modulation routing system inspired by FXpansion Tremor. It lets you assign modulation depth from any source to any target knob directly in the UI, without a separate modulation matrix panel.
+
+### Sources
+
+Three modulation sources are available per voice:
+
+| Button | Source   | Colour | Signal range |
+|--------|----------|--------|--------------|
+| LFO 1  | LFO 1 output | Orange | –1 to +1 |
+| LFO 2  | LFO 2 output | Purple | –1 to +1 |
+| Vel    | MIDI velocity | Green | 0 to 1   |
+
+Velocity is captured at note-on and held constant for the duration of the voice. LFO values are snapshotted once per audio block (at block start) and applied to all voices simultaneously.
+
+### Targets
+
+Five parameters can be modulated:
+
+| Target            | Physical range      |
+|-------------------|---------------------|
+| Filter Cutoff     | 20 – 20 000 Hz      |
+| Filter Resonance  | 0 – 1               |
+| Amp Decay         | 0.001 – 8 s         |
+| Noise Level       | 0 – 1               |
+| Drive Amount      | 0 – 1               |
+
+### How to Use
+
+1. **Select a channel** by clicking a pad.
+2. **Click a source button** (LFO 1, LFO 2, or Vel) in the TransMod row. The button highlights in its source colour. The UI is now in *focus mode* for that source.
+3. **Turn any target knob** in the advanced panel. In focus mode, turning a knob adjusts the modulation *depth* for that source, not the base parameter value.
+4. **Click the source button again** (or click a different source) to leave focus mode. Knobs return to editing base values.
+
+### Visual Feedback
+
+When a source is focused, each modulatable knob shows a two-arc display:
+
+- **Dimmed teal arc** — the base (unmodulated) parameter position.
+- **Source-coloured arc** — the depth extent from the base. The arc stretches from the base angle towards the effective modulated position.
+
+This gives an immediate visual read of how far the modulation will push a parameter.
+
+### Signal Path
+
+Modulation is computed at block rate. At the start of each audio block, the LFO values are read at their current phase without advancing, and the velocity value is held from the last trigger. The effective normalised parameter value is:
+
+```
+effective_norm = clamp(base_norm + Σ source_val[i] × depth[i], 0, 1)
+```
+
+The clamped normalised value is then converted back to the physical range for the DSP. This means modulation never pushes a parameter outside its defined range.
+
+---
+
+## DSP Signal Flow
+
+For each channel, per audio block:
+
+```
+LFO1/LFO2 snapshot → TransMod apply (filter cut, res, amp decay, noise lvl, drive)
+
+Per sample:
+  LFO1 tick → pitch mod (semitones)
+  LFO2 tick → filter cutoff mod (semitones)
+  Pitch envelope tick → pitch mod
+  Filter envelope tick → filter cutoff mod
+
+  [Oscillator: single osc | metallic cluster | partial shaper]
+    +
+  [Noise: white/pink → bandpass → noise envelope]
+
+  Mix (osc level + noise level)
+  → Pre-filter Drive (soft clip | hard clip | wavefold)
+  → SVF Filter (LP/HP/BP/Peak/Notch, optional 4-pole)
+  → Post-filter FX (soft clip | hard clip | bitcrusher | wavefold)
+  → VCA (amp envelope)
+  → output × velocity × outputGain
+```
+
+All 8 voices are accumulated into a single mono mix buffer, then distributed to the output.
+
+---
+
+## State Persistence
+
+All channel parameters and TransMod depths are saved and restored via the host's plugin state (getStateInformation / setStateInformation). The state is serialised as XML using JUCE's ValueTree. When state is restored, `syncFromParams()` is called to realign the TransMod base values with the restored parameter values before any triggers occur.
+
+---
+
+## Architecture Notes
+
+- **SVFFilter** — Chamberlin state-variable filter. One instance per pole pair. Two instances chained when 4-pole is enabled.
+- **AhdEnvelope** — generic Attack–Hold–Decay envelope. Used for pitch, filter, and amp. The decay coefficient is computed from seconds to a per-sample multiplier via `exp(−1 / (sampleRate × sec))`.
+- **Lfo** — single-phase oscillator with five waveforms. `tick()` advances phase; `peek()` reads the current value without advancing, used by TransMod.
+- **DrumVoice** — owns all DSP state for one channel: oscillator phases, envelopes, filters, LFOs, and the TransModState.
+- **DrumSynthProcessor** — owns the array of 8 DrumVoice instances, routes MIDI to triggers, mixes all voices, handles choke groups.
+- **TransModState** — lives on DrumVoice. Holds one `TransModParam` per target; each stores a normalised base value and three depth values (one per source).
