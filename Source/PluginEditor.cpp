@@ -35,6 +35,12 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     // Knob ranges
     setupKnob (pitchKnob,       20.0, 2000.0, 80.0, " Hz");
     setupKnob (oscShapeKnob,    0.0,  1.0,  0.0);
+    oscShapeKnob.textFromValueFunction = [] (double v) -> juce::String {
+        if (v < 0.04)              return "Sine";
+        if (v > 0.96)              return "Square";
+        if (v > 0.46 && v < 0.54) return "Saw";
+        return v < 0.5 ? "Sine-Saw" : "Saw-Sq";
+    };
     setupKnob (partPeakKnob,    1.0,  8.0,  1.0);
     setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
     setupKnob (partRollKnob,    0.0,  1.0,  0.5);

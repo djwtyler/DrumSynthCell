@@ -46,15 +46,15 @@ public:
         const float amp = b.getHeight() * 0.42f;
         const int   N   = int (w);
 
-        // Draw 2 cycles so discontinuities in saw/square are visible
+        // Draw one cycle; i < N avoids the wrap-around discontinuity at t=1
         juce::Path path;
         bool  started  = false;
         float prevVal  = 0.0f;
 
-        for (int i = 0; i <= N; ++i)
+        for (int i = 0; i < N; ++i)
         {
-            const float phase = float (i) / float (N) * 2.0f;
-            const float t     = phase - std::floor (phase);
+            const float phase = float (i) / float (N);
+            const float t     = phase;
 
             const float sine  = std::sin (t * juce::MathConstants<float>::twoPi);
             const float saw   = 2.0f * t - 1.0f;
