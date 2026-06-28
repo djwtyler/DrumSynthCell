@@ -6,6 +6,90 @@
 #include "TransMod.h"
 
 // ============================================================
+//  OscShapeDisplay — live waveform preview for the OSC section
+// ============================================================
+class OscShapeDisplay : public juce::Component
+{
+public:
+    void setShape (float s, bool metallic, bool shaperOn)
+    {
+        shape = s;  isMetallic = metallic;  isShaperOn = shaperOn;
+        repaint();
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto b = getLocalBounds().toFloat().reduced (1.0f);
+
+        g.setColour (juce::Colour (0xff0e0e1c));
+        g.fillRoundedRectangle (b, 3.0f);
+        g.setColour (juce::Colour (0xff252540));
+        g.drawRoundedRectangle (b, 3.0f, 1.0f);
+
+        if (isMetallic || isShaperOn)
+        {
+            g.setColour (juce::Colour (0xff555577));
+            g.setFont (juce::FontOptions (11.0f));
+            g.drawText (isMetallic ? "metallic cluster" : "shaper active",
+                        b, juce::Justification::centred);
+            return;
+        }
+
+        // Morph: Sine (0) → Saw (0.5) → Square (1.0)
+        const float s2   = juce::jlimit (0.0f, 0.9999f, shape) * 2.0f;
+        const int   idx  = int (s2);
+        const float frac = s2 - float (idx);
+
+        const float cx  = b.getX();
+        const float cy  = b.getCentreY();
+        const float w   = b.getWidth();
+        const float amp = b.getHeight() * 0.42f;
+        const int   N   = int (w);
+
+        // Draw 2 cycles so discontinuities in saw/square are visible
+        juce::Path path;
+        bool  started  = false;
+        float prevVal  = 0.0f;
+
+        for (int i = 0; i <= N; ++i)
+        {
+            const float phase = float (i) / float (N) * 2.0f;
+            const float t     = phase - std::floor (phase);
+
+            const float sine  = std::sin (t * juce::MathConstants<float>::twoPi);
+            const float saw   = 2.0f * t - 1.0f;
+            const float sq    = t < 0.5f ? 1.0f : -1.0f;
+            const float ws[3] = { sine, saw, sq };
+            const float val   = ws[idx] * (1.0f - frac)
+                              + ws[idx < 2 ? idx + 1 : 2] * frac;
+
+            const float px = cx + float (i);
+            const float py = cy - val * amp;
+
+            // Start a new subpath on discontinuities (saw/square resets)
+            if (!started || std::abs (val - prevVal) > 1.2f)
+            {
+                path.startNewSubPath (px, py);
+                started = true;
+            }
+            else
+            {
+                path.lineTo (px, py);
+            }
+            prevVal = val;
+        }
+
+        g.setColour (juce::Colour (0xff3ecfbe));
+        g.strokePath (path, juce::PathStrokeType (1.5f));
+    }
+
+private:
+    float shape     = 0.0f;
+    bool  isMetallic = false;
+    bool  isShaperOn = false;
+};
+
+// ============================================================
 //  Custom look and feel — dark knob with teal arc + indicator
 // ============================================================
 class DrumSynthLookAndFeel : public juce::LookAndFeel_V4
@@ -111,6 +195,13 @@ public:
         g.setColour (juce::Colour (0xff5ae8d6));
         g.drawLine (cx + sinA * inner, cy - cosA * inner,
                     cx + sinA * outer, cy - cosA * outer, 2.5f);
+
+        // Disabled state: dark overlay dims the whole knob
+        if (!slider.isEnabled())
+        {
+            g.setColour (juce::Colour (0xbb1a1a2e));
+            g.fillEllipse (cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+        }
     }
 };
 
@@ -158,7 +249,8 @@ private:
 
     // == OSC section ==
     juce::Slider       pitchKnob;
-    juce::Slider      oscShapeKnob;
+    juce::Slider       oscShapeKnob;
+    OscShapeDisplay    oscShapeDisplay;
     juce::ToggleButton metallicBtn  { "Metallic Cluster" };
 
     // Partial shaper

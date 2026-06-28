@@ -80,10 +80,10 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
 
     buildBasicView();
     buildAdvancedView();
-    showBasicView();
+    showAdvancedView();
     connectMacros();
     connectAdvancedControls();
-    refreshMacros();
+    refreshAdvanced();
 }
 
 // ---------------------------------------------------------------------------
@@ -171,6 +171,7 @@ void DrumSynthEditor::buildAdvancedView()
     // OSC
     addChildComponent (pitchKnob);
     addChildComponent (oscShapeKnob);
+    addChildComponent (oscShapeDisplay);
     addChildComponent (metallicBtn);
     addChildComponent (shaperEnabledBtn);
     addChildComponent (partPeakKnob);
@@ -289,7 +290,7 @@ void DrumSynthEditor::showBasicView()
     for (auto& b : advChanBtns) b.setVisible (false);
     for (auto& b : modSrcBtns)  b.setVisible (false);
     for (auto* c : std::initializer_list<juce::Component*> {
-                     &pitchKnob, &oscShapeKnob, &metallicBtn, &shaperEnabledBtn,
+                     &pitchKnob, &oscShapeKnob, &oscShapeDisplay, &metallicBtn, &shaperEnabledBtn,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
@@ -324,7 +325,7 @@ void DrumSynthEditor::showAdvancedView()
     for (auto& b : advChanBtns) b.setVisible (false);
     for (auto& b : modSrcBtns)  b.setVisible (true);
     for (auto* c : std::initializer_list<juce::Component*> {
-                     &pitchKnob, &oscShapeKnob, &metallicBtn, &shaperEnabledBtn,
+                     &pitchKnob, &oscShapeKnob, &oscShapeDisplay, &metallicBtn, &shaperEnabledBtn,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
@@ -420,7 +421,9 @@ void DrumSynthEditor::layoutAdvancedView()
         lbl (0, x,         y + 22);  lbl (1, x + C + G, y + 22);
         pitchKnob       .setBounds (x,         y + 22, C, C);
         oscShapeKnob    .setBounds (x + C + G, y + 22, C, C);
-        y += 22 + C + 8;
+        y += 22 + C + 6;
+        oscShapeDisplay .setBounds (x, y, kOscW - 16, 48);
+        y += 56;
         metallicBtn     .setBounds (x, y, kOscW - 14, 22);
         y += 30;
         shaperEnabledBtn.setBounds (x, y, kOscW - 14, 22);
@@ -648,10 +651,12 @@ void DrumSynthEditor::refreshAdvanced()
     updatingUI = true;
     const auto& p = proc.getVoice (selectedChannel).params;
 
-    pitchKnob       .setValue (p.pitchHz,          juce::dontSendNotification);
-    oscShapeKnob    .setValue (p.oscShape,        juce::dontSendNotification);
-    metallicBtn     .setToggleState (p.metallic,          juce::dontSendNotification);
-    shaperEnabledBtn.setToggleState (p.shaperEnabled,     juce::dontSendNotification);
+    pitchKnob       .setValue (p.pitchHz,  juce::dontSendNotification);
+    oscShapeKnob    .setValue (p.oscShape, juce::dontSendNotification);
+    metallicBtn     .setToggleState (p.metallic,      juce::dontSendNotification);
+    shaperEnabledBtn.setToggleState (p.shaperEnabled, juce::dontSendNotification);
+    oscShapeKnob    .setEnabled (!p.metallic && !p.shaperEnabled);
+    oscShapeDisplay .setShape (p.oscShape, p.metallic, p.shaperEnabled);
     partPeakKnob    .setValue (p.partialPeak,     juce::dontSendNotification);
     partSpaceKnob   .setValue (p.partialSpace,    juce::dontSendNotification);
     partRollKnob    .setValue (p.partialRoll,     juce::dontSendNotification);
@@ -722,10 +727,30 @@ void DrumSynthEditor::connectAdvancedControls()
 {
     using VP = DrumSynth::VoiceParams;
 
-    pitchKnob       .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.pitchHz        = float(pitchKnob.getValue()); };
-    oscShapeKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.oscShape       = float(oscShapeKnob.getValue()); };
-    metallicBtn     .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.metallic       = metallicBtn.getToggleState(); };
-    shaperEnabledBtn.onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.shaperEnabled  = shaperEnabledBtn.getToggleState(); };
+    pitchKnob       .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.pitchHz = float(pitchKnob.getValue()); };
+    oscShapeKnob    .onValueChange = [this] {
+        if (updatingUI) return;
+        proc.getVoice(selectedChannel).params.oscShape = float(oscShapeKnob.getValue());
+        oscShapeDisplay.setShape (float(oscShapeKnob.getValue()),
+                                  metallicBtn.getToggleState(),
+                                  shaperEnabledBtn.getToggleState());
+    };
+    metallicBtn     .onClick = [this] {
+        if (updatingUI) return;
+        bool m = metallicBtn.getToggleState();
+        proc.getVoice(selectedChannel).params.metallic = m;
+        oscShapeKnob.setEnabled (!m && !shaperEnabledBtn.getToggleState());
+        oscShapeDisplay.setShape (float(oscShapeKnob.getValue()), m,
+                                  shaperEnabledBtn.getToggleState());
+    };
+    shaperEnabledBtn.onClick = [this] {
+        if (updatingUI) return;
+        bool sh = shaperEnabledBtn.getToggleState();
+        proc.getVoice(selectedChannel).params.shaperEnabled = sh;
+        oscShapeKnob.setEnabled (!sh && !metallicBtn.getToggleState());
+        oscShapeDisplay.setShape (float(oscShapeKnob.getValue()),
+                                  metallicBtn.getToggleState(), sh);
+    };
     partPeakKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialPeak    = float(partPeakKnob.getValue()); };
     partSpaceKnob   .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialSpace   = float(partSpaceKnob.getValue()); };
     partRollKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialRoll    = float(partRollKnob.getValue()); };
