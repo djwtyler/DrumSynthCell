@@ -48,13 +48,10 @@ public:
 
         // Draw one cycle; i < N avoids the wrap-around discontinuity at t=1
         juce::Path path;
-        bool  started  = false;
-        float prevVal  = 0.0f;
 
         for (int i = 0; i < N; ++i)
         {
-            const float phase = float (i) / float (N);
-            const float t     = phase;
+            const float t = float (i) / float (N);
 
             const float sine  = std::sin (t * juce::MathConstants<float>::twoPi);
             const float saw   = 2.0f * t - 1.0f;
@@ -66,17 +63,10 @@ public:
             const float px = cx + float (i);
             const float py = cy - val * amp;
 
-            // Start a new subpath on discontinuities (saw/square resets)
-            if (!started || std::abs (val - prevVal) > 1.2f)
-            {
-                path.startNewSubPath (px, py);
-                started = true;
-            }
-            else
-            {
-                path.lineTo (px, py);
-            }
-            prevVal = val;
+            // Always connect — the square-wave step is a genuine vertical
+            // edge we want drawn, not a wraparound artefact to hide
+            if (i == 0) path.startNewSubPath (px, py);
+            else        path.lineTo (px, py);
         }
 
         g.setColour (juce::Colour (0xff3ecfbe));

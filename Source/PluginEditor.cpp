@@ -41,6 +41,10 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
         if (v > 0.46 && v < 0.54) return "Saw";
         return v < 0.5 ? "Sine-Saw" : "Saw-Sq";
     };
+    // setValue above ran before the formatter existed and left the text box
+    // showing the raw number; force a real change now to refresh it
+    oscShapeKnob.setValue (1.0, juce::dontSendNotification);
+    oscShapeKnob.setValue (0.0, juce::dontSendNotification);
     setupKnob (partPeakKnob,    1.0,  8.0,  1.0);
     setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
     setupKnob (partRollKnob,    0.0,  1.0,  0.5);
