@@ -46,7 +46,7 @@ static constexpr int kNumModTargets = static_cast<int>(ModTarget::NumTargets);
 // order as the ModTarget enum above.
 struct ModTargetRange { float min, max; };
 static constexpr ModTargetRange kModRanges[kNumModTargets] = {
-    {   20.f,    2000.f },   // PitchHz
+    {   20.f,   20000.f },   // PitchHz
     {    0.f,       1.f },   // OscShape
     {    1.f,       8.f },   // PartialPeak
     {    0.f,       1.f },   // PartialSpace
@@ -68,8 +68,8 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {0.001f,       2.f  },   // AmpAttack
     {    0.f,       2.f },   // AmpHold
     {0.001f,       8.f  },   // AmpDecay
-    {  0.01f,    1000.f },   // Lfo1Rate
-    {  0.01f,    1000.f },   // Lfo2Rate
+    {   0.1f,      10.f },   // Lfo1Rate
+    {   0.1f,      10.f },   // Lfo2Rate
     {    0.f,       1.f },   // Fx1Amount
     {    1.f,      24.f },   // BitDepth
     {    0.f,       1.f },   // OutputGain

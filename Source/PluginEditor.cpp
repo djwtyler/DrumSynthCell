@@ -38,7 +38,8 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupCombo (fx1TypeBox,    { "Off", "Soft Clip", "Hard Clip", "Bitcrusher", "Wavefold" });
 
     // Knob ranges
-    setupKnob (pitchKnob,       20.0, 2000.0, 80.0, " Hz");
+    setupKnob (pitchKnob,       20.0, 20000.0, 80.0, " Hz");
+    pitchKnob.setSkewFactorFromMidPoint (300.0);   // 300Hz at 12 o'clock, 20-20000 either side
     setupKnob (oscShapeKnob,    0.0,  1.0,  0.0);
     oscShapeKnob.textFromValueFunction = [] (double v) -> juce::String {
         if (v < 0.04)              return "Sine";
@@ -70,8 +71,8 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (ampAttKnob,      0.001,2.0,  0.002," s");
     setupKnob (ampHoldKnob,     0.0,  2.0,  0.0,  " s");
     setupKnob (ampDecKnob,      0.001,8.0,  0.5,  " s");
-    setupKnob (lfo1RateKnob,    0.01, 1000.0, 1.0, " Hz");
-    setupKnob (lfo2RateKnob,    0.01, 1000.0, 1.0, " Hz");
+    setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz");
+    setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
     setupKnob (bitDepthKnob,    1.0,  24.0, 8.0,  " bit");
     setupKnob (masterVolKnob,   0.0,  1.5,  1.0);
@@ -83,7 +84,8 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
         k.setColour (juce::Slider::rotarySliderFillColourId, kAccent);
         k.setColour (juce::Slider::rotarySliderOutlineColourId, kPanelLine);
     }
-    setupKnob (macroKnobs[0], 20.0,    2000.0,  80.0,  " Hz");  // Tune
+    setupKnob (macroKnobs[0], 20.0,    20000.0, 80.0,  " Hz");  // Tune
+    macroKnobs[0].setSkewFactorFromMidPoint (300.0);
     setupKnob (macroKnobs[1],  0.001,  4.0,     0.05,  " s");   // Env 1 decay
     setupKnob (macroKnobs[2],  0.001,  2.0,     0.002, " s");   // Attack
     setupKnob (macroKnobs[3],  0.001,  8.0,     0.5,   " s");   // Decay
