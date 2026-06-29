@@ -14,8 +14,7 @@ DrumSynthProcessor::DrumSynthProcessor()
     {
         auto& p = voices[DrumSynth::Kick].params;
         p.pitchHz        = 60.0f;
-        p.oscShape       = 0.0f;          // sine
-        p.shaperEnabled  = false;
+        p.oscShape       = 0.0f;          // sine (oscMode defaults to Single)
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.04f;
         p.noiseLevel     = 0.05f;
@@ -84,7 +83,7 @@ DrumSynthProcessor::DrumSynthProcessor()
     {
         auto& p = voices[DrumSynth::Tom1].params;
         p.pitchHz        = 120.0f;
-        p.shaperEnabled  = true;
+        p.oscMode        = VP::OscMode::PartialShaper;
         p.partialPeak    = 1.0f;
         p.partialSpace   = 0.5f;
         p.partialRoll    = 0.6f;
@@ -108,7 +107,7 @@ DrumSynthProcessor::DrumSynthProcessor()
     {
         auto& p = voices[DrumSynth::Tom2].params;
         p.pitchHz        = 90.0f;
-        p.shaperEnabled  = true;
+        p.oscMode        = VP::OscMode::PartialShaper;
         p.partialPeak    = 1.0f;
         p.partialSpace   = 0.5f;
         p.partialRoll    = 0.6f;
@@ -132,7 +131,7 @@ DrumSynthProcessor::DrumSynthProcessor()
     {
         auto& p = voices[DrumSynth::ClosedHat].params;
         p.pitchHz        = 8000.0f;
-        p.metallic       = true;
+        p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.4f;
         p.noiseLevel     = 0.6f;
         p.noiseDecay     = 0.05f;
@@ -152,7 +151,7 @@ DrumSynthProcessor::DrumSynthProcessor()
     {
         auto& p = voices[DrumSynth::OpenHat].params;
         p.pitchHz        = 8000.0f;
-        p.metallic       = true;
+        p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.35f;
         p.noiseLevel     = 0.7f;
         p.noiseDecay     = 0.5f;
@@ -172,7 +171,7 @@ DrumSynthProcessor::DrumSynthProcessor()
     {
         auto& p = voices[DrumSynth::Cymbal].params;
         p.pitchHz        = 5000.0f;
-        p.metallic       = true;
+        p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.25f;
         p.noiseLevel     = 0.85f;
         p.noiseDecay     = 1.0f;
@@ -289,8 +288,7 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("ch",              ch,                              nullptr);
         v.setProperty ("pitchHz",         p.pitchHz,                      nullptr);
         v.setProperty ("oscShape",        p.oscShape,                     nullptr);
-        v.setProperty ("metallic",        p.metallic,                     nullptr);
-        v.setProperty ("shaperEnabled",   p.shaperEnabled,                nullptr);
+        v.setProperty ("oscMode",         int (p.oscMode),                nullptr);
         v.setProperty ("partialPeak",     p.partialPeak,                  nullptr);
         v.setProperty ("partialSpace",    p.partialSpace,                 nullptr);
         v.setProperty ("partialRoll",     p.partialRoll,                  nullptr);
@@ -369,8 +367,7 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
 
         p.pitchHz        = float (v.getProperty ("pitchHz",        p.pitchHz));
         p.oscShape       = float (v.getProperty ("oscShape",       p.oscShape));
-        p.metallic       = bool  (v.getProperty ("metallic",       p.metallic));
-        p.shaperEnabled  = bool  (v.getProperty ("shaperEnabled",  p.shaperEnabled));
+        p.oscMode        = VP::OscMode (int (v.getProperty ("oscMode", int (p.oscMode))));
         p.partialPeak    = float (v.getProperty ("partialPeak",    p.partialPeak));
         p.partialSpace   = float (v.getProperty ("partialSpace",   p.partialSpace));
         p.partialRoll    = float (v.getProperty ("partialRoll",    p.partialRoll));

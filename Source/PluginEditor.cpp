@@ -36,6 +36,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupCombo (filterModeBox, { "LP", "HP", "BP", "Peak", "Notch" });
     setupCombo (filterModelBox,{ "Clean", "Fat" });
     setupCombo (fx1TypeBox,    { "Off", "Soft Clip", "Hard Clip", "Bitcrusher", "Wavefold" });
+    setupCombo (oscModeBox,    { "Single", "Metallic Cluster", "Partial Shaper" });
 
     // Knob ranges
     setupKnob (pitchKnob,       20.0, 20000.0, 80.0, " Hz");
@@ -187,10 +188,9 @@ void DrumSynthEditor::buildAdvancedView()
 
     // OSC
     addChildComponent (pitchKnob);
+    addChildComponent (oscModeBox);
     addChildComponent (oscShapeKnob);
     addChildComponent (oscShapeDisplay);
-    addChildComponent (metallicBtn);
-    addChildComponent (shaperEnabledBtn);
     addChildComponent (partPeakKnob);
     addChildComponent (partSpaceKnob);
     addChildComponent (partRollKnob);
@@ -271,8 +271,7 @@ void DrumSynthEditor::buildAdvancedView()
     }
 
     // Style toggles
-    for (auto* btn : { &metallicBtn, &shaperEnabledBtn, &membraneBtn,
-                       &noisePinkBtn, &filter4PoleBtn })
+    for (auto* btn : { &membraneBtn, &noisePinkBtn, &filter4PoleBtn })
     {
         btn->setColour (juce::ToggleButton::textColourId,      kTextDark);
         btn->setColour (juce::ToggleButton::tickColourId,      juce::Colours::white);
@@ -388,7 +387,7 @@ void DrumSynthEditor::showBasicView()
     for (auto& b : advChanBtns) b.setVisible (false);
     for (auto& b : modSrcBtns)  b.setVisible (false);
     for (auto* c : std::initializer_list<juce::Component*> {
-                     &pitchKnob, &oscShapeKnob, &oscShapeDisplay, &metallicBtn, &shaperEnabledBtn,
+                     &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
@@ -426,7 +425,7 @@ void DrumSynthEditor::showAdvancedView()
     for (auto& b : advChanBtns) b.setVisible (false);
     for (auto& b : modSrcBtns)  b.setVisible (true);
     for (auto* c : std::initializer_list<juce::Component*> {
-                     &pitchKnob, &oscShapeKnob, &oscShapeDisplay, &metallicBtn, &shaperEnabledBtn,
+                     &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
@@ -529,10 +528,8 @@ void DrumSynthEditor::layoutAdvancedView()
         y += 22 + C + 6;
         oscShapeDisplay .setBounds (x, y, (kOscW - 16) / 3, 48);
         y += 56;
-        metallicBtn     .setBounds (x, y, kOscW - 14, 22);
-        y += 30;
-        shaperEnabledBtn.setBounds (x, y, kOscW - 14, 22);
-        y += 30;
+        oscModeBox      .setBounds (x, y, kOscW - 14, 26);
+        y += 34;
 
         lbl (2, x,         y + 22);  lbl (3, x + C + G, y + 22);
         partPeakKnob    .setBounds (x,         y + 22, C, C);
@@ -772,9 +769,7 @@ void DrumSynthEditor::refreshAdvanced()
     updatingUI = true;
     const auto& p = proc.getVoice (selectedChannel).params;
 
-    metallicBtn     .setToggleState (p.metallic,      juce::dontSendNotification);
-    shaperEnabledBtn.setToggleState (p.shaperEnabled, juce::dontSendNotification);
-    oscShapeKnob    .setEnabled (!p.metallic && !p.shaperEnabled);
+    oscModeBox      .setSelectedId (int (p.oscMode) + 1, juce::dontSendNotification);
     membraneBtn     .setToggleState (p.membraneMode, juce::dontSendNotification);
     noisePinkBtn    .setToggleState (p.noiseColor == DrumSynth::VoiceParams::NoiseColor::Pink,
                                      juce::dontSendNotification);
@@ -791,9 +786,30 @@ void DrumSynthEditor::refreshAdvanced()
         if (!entry.isMacro)
             setTransModKnobProps (*entry.slider, entry.target);
 
-    oscShapeDisplay.setShape (p.oscShape, p.metallic, p.shaperEnabled);
+    updateOscModeVisibility();
 
     updatingUI = false;
+}
+
+void DrumSynthEditor::updateOscModeVisibility()
+{
+    if (!advancedMode) return;
+
+    using OM = DrumSynth::VoiceParams::OscMode;
+    auto mode = proc.getVoice (selectedChannel).params.oscMode;
+    bool single = (mode == OM::Single);
+    bool shaper = (mode == OM::PartialShaper);
+
+    oscShapeKnob.setVisible (single);
+    advLbl[1].setVisible (single);   // "Shape"
+
+    for (auto* c : std::initializer_list<juce::Component*> {
+                     &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn })
+        c->setVisible (shaper);
+    for (int i = 2; i <= 5; ++i) advLbl[i].setVisible (shaper);   // "Peak","Space","Roll","Decay"
+
+    oscShapeDisplay.setShape (float (oscShapeKnob.getValue()),
+                              mode == OM::Metallic, shaper);
 }
 
 // ---------------------------------------------------------------------------
@@ -839,26 +855,16 @@ void DrumSynthEditor::connectAdvancedControls()
     auto prevShapeChange = oscShapeKnob.onValueChange;
     oscShapeKnob.onValueChange = [this, prevShapeChange] {
         if (prevShapeChange) prevShapeChange();
+        auto mode = proc.getVoice(selectedChannel).params.oscMode;
         oscShapeDisplay.setShape (float (oscShapeKnob.getValue()),
-                                  metallicBtn.getToggleState(),
-                                  shaperEnabledBtn.getToggleState());
+                                  mode == VP::OscMode::Metallic,
+                                  mode == VP::OscMode::PartialShaper);
     };
 
-    metallicBtn     .onClick = [this] {
+    oscModeBox.onChange = [this] {
         if (updatingUI) return;
-        bool m = metallicBtn.getToggleState();
-        proc.getVoice(selectedChannel).params.metallic = m;
-        oscShapeKnob.setEnabled (!m && !shaperEnabledBtn.getToggleState());
-        oscShapeDisplay.setShape (float(oscShapeKnob.getValue()), m,
-                                  shaperEnabledBtn.getToggleState());
-    };
-    shaperEnabledBtn.onClick = [this] {
-        if (updatingUI) return;
-        bool sh = shaperEnabledBtn.getToggleState();
-        proc.getVoice(selectedChannel).params.shaperEnabled = sh;
-        oscShapeKnob.setEnabled (!sh && !metallicBtn.getToggleState());
-        oscShapeDisplay.setShape (float(oscShapeKnob.getValue()),
-                                  metallicBtn.getToggleState(), sh);
+        proc.getVoice(selectedChannel).params.oscMode = VP::OscMode (oscModeBox.getSelectedId() - 1);
+        updateOscModeVisibility();
     };
     membraneBtn     .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.membraneMode   = membraneBtn.getToggleState(); };
     noisePinkBtn    .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.noiseColor     = noisePinkBtn.getToggleState() ? VP::NoiseColor::Pink : VP::NoiseColor::White; };

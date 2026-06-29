@@ -18,12 +18,14 @@ enum ChokeGroup   { None = 0, A, B, C };
 struct VoiceParams
 {
     // --- Oscillator ---
+    // The three modes are mutually exclusive — exactly one generates the
+    // voice's tonal component. oscShape only applies to Single; partial*/
+    // membraneMode only apply to PartialShaper.
+    enum class OscMode { Single, Metallic, PartialShaper } oscMode = OscMode::Single;
     float pitchHz   = 80.0f;
-    float oscShape  = 0.0f;   // 0=Sine 0.33=Saw 0.66=Square 1.0=Tri
-    bool  metallic  = false;  // 808-style metallic cluster (6 detuned squares)
+    float oscShape  = 0.0f;   // 0=Sine 0.33=Saw 0.66=Square 1.0=Tri (Single only)
 
-    // --- Harmonic Partial Shaper ---
-    bool  shaperEnabled = false;
+    // --- Harmonic Partial Shaper (only used when oscMode == PartialShaper) ---
     float partialPeak   = 1.0f;  // 1-8: which partial is loudest
     float partialSpace  = 0.5f;  // 0-1: partial frequency spacing
     float partialRoll   = 0.5f;  // 0-1: spectral rolloff away from peak

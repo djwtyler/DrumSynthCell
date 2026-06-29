@@ -1,4 +1,4 @@
-# DrumSynthCell — User Guide
+  # DrumSynthCell — User Guide
 
 DrumSynthCell is a hybrid drum synthesizer audio plugin built with the JUCE framework. It generates all sounds via synthesis — no sample packs. Eight independent channels cover the full classic drum machine palette: kick, snare, clap, toms, hats, and cymbal.
 
@@ -92,24 +92,25 @@ The TransMod source buttons appear to the right of the pad grid.
 
 ### OSC Section
 
-Controls the main oscillator.
+Controls the main oscillator. A single **Oscillator Mode** dropdown selects
+one of three mutually exclusive modes; only the controls relevant to the
+selected mode are shown.
 
-| Control         | Description                                                                 |
-|-----------------|-----------------------------------------------------------------------------|
-| Shape           | Continuous morph: Sine → Saw → Square → Triangle                            |
-| Metallic        | Replaces the single oscillator with 6 detuned squares at inharmonic ratios (808-style metallic cluster for hats/cymbals) |
-| Partial Shaper  | Enables the harmonic partial engine (8 partials, replaces the single osc)   |
-| Membrane        | Selects inharmonic Bessel ratios (drumskin physics) vs integer harmonics    |
-| Peak            | Which partial (1–8) receives maximum spectral weight                        |
-| Space           | Stretches partial frequency spacing (0 = unison, 0.5 = natural, 1 = stretched) |
-| Roll            | Spectral rolloff rate away from the peak partial                            |
-| Decay           | Differential decay — higher partials fade faster; 0 = equal decay, 1 = 5× faster per octave |
+| Control         | Applies to       | Description                                                                 |
+|-----------------|------------------|------------------------------------------------------------------------------|
+| Oscillator Mode | All              | Single / Metallic Cluster / Partial Shaper — selects the tone source        |
+| Shape           | Single only      | Continuous morph: Sine → Saw → Square                                       |
+| Peak            | Partial Shaper   | Which partial (1–8) receives maximum spectral weight                        |
+| Space           | Partial Shaper   | Stretches partial frequency spacing (0 = unison, 0.5 = natural, 1 = stretched) |
+| Roll            | Partial Shaper   | Spectral rolloff rate away from the peak partial                            |
+| Decay           | Partial Shaper   | Differential decay — higher partials fade faster; 0 = equal decay, 1 = 5× faster per octave |
+| Membrane        | Partial Shaper   | Selects inharmonic Bessel ratios (drumskin physics) vs integer harmonics — not applicable to Single or Metallic Cluster |
 
 #### Oscillator Modes (mutually exclusive)
 
-- **Single osc** (default): Shape knob morphs waveform continuously.
-- **Metallic Cluster**: Six detuned square oscillators at ratios 1.000, 1.483, 2.000, 2.501, 2.999, 3.501 relative to the base pitch. Used for 808 hats and cymbals.
-- **Partial Shaper**: Eight-partial additive engine. The spectral envelope is set by Peak + Roll; partials decay differentially using the Decay control; Membrane selects the frequency grid.
+- **Single** (default): Shape knob morphs the waveform continuously, 0=Sine, 0.5=Saw, 1.0=Square.
+- **Metallic Cluster**: Six detuned square oscillators at ratios 1.000, 1.483, 2.000, 2.501, 2.999, 3.501 relative to the base pitch. No other OSC controls apply. Used for 808 hats and cymbals.
+- **Partial Shaper**: Eight-partial additive engine. The spectral envelope is set by Peak + Roll; partials decay differentially using the Decay control; Membrane selects the frequency grid (only meaningful in this mode).
 
 ---
 

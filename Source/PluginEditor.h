@@ -312,16 +312,16 @@ private:
     std::array<juce::TextButton, DrumSynth::NumChannels> advChanBtns;
 
     // == OSC section ==
+    // Single / Metallic Cluster / Partial Shaper are mutually exclusive;
+    // oscModeBox selects one and updateOscModeVisibility() shows only the
+    // controls that apply to it.
     juce::Slider       pitchKnob;
-    juce::Slider       oscShapeKnob;
+    juce::ComboBox     oscModeBox;
+    juce::Slider       oscShapeKnob;          // Single only
     OscShapeDisplay    oscShapeDisplay;
-    juce::ToggleButton metallicBtn  { "Metallic Cluster" };
-
-    // Partial shaper
-    juce::ToggleButton shaperEnabledBtn { "Partial Shaper" };
-    juce::Slider       partPeakKnob,  partSpaceKnob,
+    juce::Slider       partPeakKnob,  partSpaceKnob,    // Partial Shaper only
                        partRollKnob,  partDecKnob;
-    juce::ToggleButton membraneBtn  { "Membrane" };
+    juce::ToggleButton membraneBtn  { "Membrane" };      // Partial Shaper only
 
     // == NOISE section ==
     juce::Slider       noiseLevelKnob, noiseDecKnob,
@@ -409,6 +409,7 @@ private:
 
     void refreshMacros();
     void refreshAdvanced();
+    void updateOscModeVisibility();
 
     void updatePadHighlight();
     void updateChanHighlight();

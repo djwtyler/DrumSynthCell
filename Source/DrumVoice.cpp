@@ -307,12 +307,12 @@ void DrumVoice::process (float* dest, int numSamples)
     {
         // --- Source generation ---
         float osc = 0.0f;
-        if (params.metallic)
-            osc = computeMetallicSample();
-        else if (params.shaperEnabled)
-            osc = computePartialSample();
-        else
-            osc = computeOscSample();
+        switch (params.oscMode)
+        {
+            case VoiceParams::OscMode::Metallic:      osc = computeMetallicSample(); break;
+            case VoiceParams::OscMode::PartialShaper: osc = computePartialSample();  break;
+            case VoiceParams::OscMode::Single:        osc = computeOscSample();      break;
+        }
 
         const float noiseEnv = noiseEnvValue;
         noiseEnvValue *= noiseEnvCoeff;
