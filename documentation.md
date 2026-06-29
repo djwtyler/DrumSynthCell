@@ -99,7 +99,7 @@ selected mode are shown.
 | Control         | Applies to       | Description                                                                 |
 |-----------------|------------------|------------------------------------------------------------------------------|
 | Oscillator Mode | All              | Single / Metallic Cluster / Partial Shaper — selects the tone source        |
-| Shape           | Single only      | Continuous morph: Sine → Saw → Square                                       |
+| Shape           | Single only      | Continuous morph: Sine → Triangle → Saw → Square                            |
 | Peak            | Partial Shaper   | Which partial (1–8) receives maximum spectral weight                        |
 | Space           | Partial Shaper   | Stretches partial frequency spacing (0 = unison, 0.5 = natural, 1 = stretched) |
 | Roll            | Partial Shaper   | Spectral rolloff rate away from the peak partial                            |
@@ -108,7 +108,7 @@ selected mode are shown.
 
 #### Oscillator Modes (mutually exclusive)
 
-- **Single** (default): Shape knob morphs the waveform continuously, 0=Sine, 0.5=Saw, 1.0=Square.
+- **Single** (default): Shape knob morphs the waveform continuously, 0=Sine, 1/3=Triangle, 2/3=Saw, 1.0=Square.
 - **Metallic Cluster**: Six detuned square oscillators at ratios 1.000, 1.483, 2.000, 2.501, 2.999, 3.501 relative to the base pitch. No other OSC controls apply. Used for 808 hats and cymbals.
 - **Partial Shaper**: Eight-partial additive engine. The spectral envelope is set by Peak + Roll; partials decay differentially using the Decay control; Membrane selects the frequency grid (only meaningful in this mode).
 

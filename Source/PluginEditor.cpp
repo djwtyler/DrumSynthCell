@@ -43,10 +43,13 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     pitchKnob.setSkewFactorFromMidPoint (300.0);   // 300Hz at 12 o'clock, 20-20000 either side
     setupKnob (oscShapeKnob,    0.0,  1.0,  0.0);
     oscShapeKnob.textFromValueFunction = [] (double v) -> juce::String {
-        if (v < 0.04)              return "Sine";
-        if (v > 0.96)              return "Square";
-        if (v > 0.46 && v < 0.54) return "Saw";
-        return v < 0.5 ? "Sine-Saw" : "Saw-Sq";
+        if (v < 0.04)               return "Sine";
+        if (v > 0.96)               return "Square";
+        if (v > 0.295 && v < 0.37) return "Triangle";
+        if (v > 0.63  && v < 0.705) return "Saw";
+        if (v < 1.0 / 3.0)           return "Sine-Tri";
+        if (v < 2.0 / 3.0)           return "Tri-Saw";
+        return "Saw-Sq";
     };
     // setValue above ran before the formatter existed and left the text box
     // showing the raw number; force a real change now to refresh it

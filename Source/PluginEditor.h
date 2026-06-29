@@ -30,8 +30,8 @@ public:
         g.setColour (juce::Colours::white);
         g.drawRoundedRectangle (b, 3.0f, 1.0f);
 
-        // Morph: Sine (0) → Saw (0.5) → Square (1.0)
-        const float s2   = juce::jlimit (0.0f, 0.9999f, shape) * 2.0f;
+        // Morph: Sine (0) → Triangle (1/3) → Saw (2/3) → Square (1)
+        const float s2   = juce::jlimit (0.0f, 0.9999f, shape) * 3.0f;
         const int   idx  = int (s2);
         const float frac = s2 - float (idx);
 
@@ -49,11 +49,12 @@ public:
             const float t = float (i) / float (N);
 
             const float sine  = std::sin (t * juce::MathConstants<float>::twoPi);
+            const float tri   = t < 0.5f ? (4.0f * t - 1.0f) : (3.0f - 4.0f * t);
             const float saw   = 2.0f * t - 1.0f;
             const float sq    = t < 0.5f ? 1.0f : -1.0f;
-            const float ws[3] = { sine, saw, sq };
+            const float ws[4] = { sine, tri, saw, sq };
             const float val   = ws[idx] * (1.0f - frac)
-                              + ws[idx < 2 ? idx + 1 : 2] * frac;
+                              + ws[idx < 3 ? idx + 1 : 3] * frac;
 
             const float px = cx + float (i);
             const float py = cy - val * amp;

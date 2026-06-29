@@ -148,15 +148,16 @@ float DrumVoice::computeOscSample() noexcept
     const float tpi = juce::MathConstants<float>::twoPi;
 
     float sine = std::sin (p * tpi);
+    float tri  = p < 0.5f ? (4.0f * p - 1.0f) : (3.0f - 4.0f * p);
     float saw  = 2.0f * p - 1.0f;
     float sq   = p < 0.5f ? 1.0f : -1.0f;
 
-    // Continuous morph: Sine (0) → Saw (0.5) → Square (1.0)
-    const float s    = juce::jlimit (0.0f, 0.9999f, params.oscShape) * 2.0f;
+    // Continuous morph: Sine (0) → Triangle (1/3) → Saw (2/3) → Square (1)
+    const float s    = juce::jlimit (0.0f, 0.9999f, params.oscShape) * 3.0f;
     const int   idx  = int (s);
     const float frac = s - float (idx);
-    const float waves[3] = { sine, saw, sq };
-    float sample = waves[idx] * (1.0f - frac) + waves[idx < 2 ? idx + 1 : 2] * frac;
+    const float waves[4] = { sine, tri, saw, sq };
+    float sample = waves[idx] * (1.0f - frac) + waves[idx < 3 ? idx + 1 : 3] * frac;
 
     oscPhase += double (hz) / sampleRate;
     if (oscPhase >= 1.0) oscPhase -= 1.0;
