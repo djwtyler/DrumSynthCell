@@ -432,7 +432,7 @@ void DrumSynthEditor::layoutAdvancedView()
         pitchKnob       .setBounds (x,         y + 22, C, C);
         oscShapeKnob    .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 6;
-        oscShapeDisplay .setBounds (x, y, (kOscW - 16) / 2, 48);
+        oscShapeDisplay .setBounds (x, y, (kOscW - 16) / 3, 48);
         y += 56;
         metallicBtn     .setBounds (x, y, kOscW - 14, 22);
         y += 30;
