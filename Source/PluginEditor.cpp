@@ -6,8 +6,8 @@ static const char* kChanNames[DrumSynth::NumChannels] =
 // Colour palette — one blue family applied across the whole plugin, each
 // other colour derived as a relative shade of kBg so the theme stays
 // cohesive instead of mixing in unrelated hardcoded darks.
-static const juce::Colour kBg        { 0xff96b4d7 };          // darker, more saturated blue
-static const juce::Colour kHeaderBg  { kBg.darker (0.18f) };  // header strip — one shade darker than kBg
+static const juce::Colour kBg        { 0xffacc6e2 };          // a shade lighter
+static const juce::Colour kHeaderBg  { kBg.darker (0.28f) };  // header strip — a shade darker than before
 static const juce::Colour kPanel     { kBg.darker (0.65f) };  // channel bar / combo / button backgrounds
 static const juce::Colour kPanelLine { kBg.darker (0.72f) };  // separators
 static const juce::Colour kAccent    { 0xff4f8ef7 };
