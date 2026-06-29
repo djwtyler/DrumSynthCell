@@ -32,9 +32,7 @@ enum class ModTarget : int {
     AmpHold,
     AmpDecay,
     Lfo1Rate,
-    Lfo1Depth,
     Lfo2Rate,
-    Lfo2Depth,
     Fx1Amount,
     BitDepth,
     OutputGain,
@@ -69,9 +67,7 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {    0.f,       2.f },   // AmpHold
     {0.001f,       8.f  },   // AmpDecay
     {  0.01f,    1000.f },   // Lfo1Rate
-    {    0.f,      24.f },   // Lfo1Depth
     {  0.01f,    1000.f },   // Lfo2Rate
-    {    0.f,      24.f },   // Lfo2Depth
     {    0.f,       1.f },   // Fx1Amount
     {    1.f,      24.f },   // BitDepth
     {    0.f,       1.f },   // OutputGain

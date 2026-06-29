@@ -63,14 +63,12 @@ struct VoiceParams
     float ampHold    = 0.0f;
     float ampDecay   = 0.5f;
 
-    // --- LFO 1 (→ pitch FM) ---
+    // --- LFO 1 (TransMod source only — no hardwired audio role) ---
     float lfo1Rate  = 1.0f;
-    float lfo1Depth = 0.0f;   // semitones
     enum class LfoWave { Sine, Triangle, Square, SawUp, SawDown } lfo1Wave = LfoWave::Sine;
 
-    // --- LFO 2 (→ filter cutoff mod) ---
+    // --- LFO 2 (TransMod source only — no hardwired audio role) ---
     float   lfo2Rate  = 1.0f;
-    float   lfo2Depth = 0.0f; // semitones
     LfoWave lfo2Wave  = LfoWave::Sine;
 
     // --- FX Slot 1 (post-filter distortion) ---
@@ -169,31 +167,10 @@ public:
     void prepare (double sr) noexcept { sampleRate = sr; }
     void reset()  noexcept           { phase = 0.0; }
 
-    float tick (float rateHz, VoiceParams::LfoWave wave) noexcept
-    {
-        const float p   = float (phase);
-        float       out = 0.0f;
-        switch (wave)
-        {
-            case VoiceParams::LfoWave::Sine:
-                out = std::sin (p * juce::MathConstants<float>::twoPi); break;
-            case VoiceParams::LfoWave::Triangle:
-                out = p < 0.5f ? (4.0f * p - 1.0f) : (3.0f - 4.0f * p); break;
-            case VoiceParams::LfoWave::Square:
-                out = p < 0.5f ? 1.0f : -1.0f; break;
-            case VoiceParams::LfoWave::SawUp:
-                out = 2.0f * p - 1.0f; break;
-            case VoiceParams::LfoWave::SawDown:
-                out = 1.0f - 2.0f * p; break;
-        }
-        phase += double (rateHz) / sampleRate;
-        if (phase >= 1.0) phase -= 1.0;
-        return out;
-    }
-
-    // Advances phase by a whole block at once, without computing a sample.
-    // Used to keep the LFO running (for TransMod ring animation) while the
-    // voice is idle, without paying per-sample synthesis cost.
+    // Advances phase by a whole block at once. LFO1/LFO2 exist purely as
+    // TransMod sources (no hardwired audio role), so only block-rate
+    // phase precision is needed — called once per process() call,
+    // active or idle.
     void advanceBlock (float rateHz, int numSamples) noexcept
     {
         phase += double (rateHz) * double (numSamples) / sampleRate;

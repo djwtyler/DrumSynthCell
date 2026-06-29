@@ -46,9 +46,7 @@ static constexpr ModBinding kModBindings[] = {
     { ModTarget::AmpHold,         &VoiceParams::ampHold         },
     { ModTarget::AmpDecay,        &VoiceParams::ampDecay        },
     { ModTarget::Lfo1Rate,        &VoiceParams::lfo1Rate        },
-    { ModTarget::Lfo1Depth,       &VoiceParams::lfo1Depth       },
     { ModTarget::Lfo2Rate,        &VoiceParams::lfo2Rate        },
-    { ModTarget::Lfo2Depth,       &VoiceParams::lfo2Depth       },
     { ModTarget::Fx1Amount,       &VoiceParams::fx1Amount       },
     { ModTarget::BitDepth,        &VoiceParams::bitDepth        },
     { ModTarget::OutputGain,      &VoiceParams::outputGain      },
@@ -292,31 +290,23 @@ float DrumVoice::applyFx1 (float in) noexcept
 // ---------------------------------------------------------------------------
 void DrumVoice::process (float* dest, int numSamples)
 {
-    if (!ampEnv.isActive())
-    {
-        // Idle: no audio to render, but keep the LFOs running and the
-        // TransMod snapshot live so the UI's modulation ring keeps
-        // animating between hits instead of freezing at the last value.
-        lfo1.advanceBlock (params.lfo1Rate, numSamples);
-        lfo2.advanceBlock (params.lfo2Rate, numSamples);
-        applyTransMod();
-        return;
-    }
+    // LFO1/LFO2 exist purely as TransMod sources (no hardwired audio role),
+    // so phase only needs block-rate precision — advance once per call,
+    // active or idle, so the TransMod ring keeps animating between hits.
+    lfo1.advanceBlock (params.lfo1Rate, numSamples);
+    lfo2.advanceBlock (params.lfo2Rate, numSamples);
     applyTransMod();
+
+    if (!ampEnv.isActive()) return;
 
     for (int i = 0; i < numSamples; ++i)
     {
         // --- Modulation ---
-        const float lfo1Val = lfo1.tick (params.lfo1Rate, params.lfo1Wave);
-        const float lfo2Val = lfo2.tick (params.lfo2Rate, params.lfo2Wave);
-
         const float pitchEnvVal = pitchEnv.tick();
-        const float pitchMod    = pitchEnvVal * params.pitchEnvDepth
-                                + lfo1Val     * params.lfo1Depth;
+        const float pitchMod    = pitchEnvVal * params.pitchEnvDepth;
 
         const float filterEnvVal = filterEnv.tick();
-        const float cutMod       = filterEnvVal * params.filterEnvDepth
-                                 + lfo2Val      * params.lfo2Depth;
+        const float cutMod       = filterEnvVal * params.filterEnvDepth;
         const float cutHz = params.filterCutoff * std::pow (2.0f, cutMod / 12.0f);
 
         // --- Source generation ---

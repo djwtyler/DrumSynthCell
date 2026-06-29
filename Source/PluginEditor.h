@@ -289,10 +289,10 @@ private:
     // Amp
     juce::Slider       ampAttKnob, ampHoldKnob, ampDecKnob;
 
-    // == LFO section ==
-    juce::Slider       lfo1RateKnob, lfo1DepthKnob;
+    // == LFO section (TransMod sources only) ==
+    juce::Slider       lfo1RateKnob;
     juce::ComboBox     lfo1WaveBox;
-    juce::Slider       lfo2RateKnob, lfo2DepthKnob;
+    juce::Slider       lfo2RateKnob;
     juce::ComboBox     lfo2WaveBox;
 
     // == FX section ==
@@ -301,8 +301,8 @@ private:
 
     // Per-knob name labels for advanced view (28 total, ordered by panel)
     // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
-    // ENV:13-21  LFO:22-25  FX:26-27
-    juce::Label advLbl[28];
+    // ENV:13-21  LFO:22-23  FX:24-25
+    juce::Label advLbl[26];
 
     // ---------------------------------------------------------------
     // Layout constants

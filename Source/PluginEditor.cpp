@@ -66,9 +66,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (ampHoldKnob,     0.0,  2.0,  0.0,  " s");
     setupKnob (ampDecKnob,      0.001,8.0,  0.5,  " s");
     setupKnob (lfo1RateKnob,    0.01, 1000.0, 1.0, " Hz");
-    setupKnob (lfo1DepthKnob,   0.0,  24.0, 0.0,  " st");
     setupKnob (lfo2RateKnob,    0.01, 1000.0, 1.0, " Hz");
-    setupKnob (lfo2DepthKnob,   0.0,  24.0, 0.0,  " st");
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
     setupKnob (bitDepthKnob,    1.0,  24.0, 8.0,  " bit");
 
@@ -222,10 +220,8 @@ void DrumSynthEditor::buildAdvancedView()
 
     // LFO
     addChildComponent (lfo1RateKnob);
-    addChildComponent (lfo1DepthKnob);
     addChildComponent (lfo1WaveBox);
     addChildComponent (lfo2RateKnob);
-    addChildComponent (lfo2DepthKnob);
     addChildComponent (lfo2WaveBox);
 
     // FX
@@ -234,7 +230,7 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (bitDepthKnob);
 
     // Per-knob labels for advanced view
-    static const char* kAdvLblText[28] = {
+    static const char* kAdvLblText[26] = {
         "Pitch", "Shape", "Peak", "Space", "Roll", "Decay", // OSC 0-5
         "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
         "Amount",                                            // DRIVE 10
@@ -242,10 +238,10 @@ void DrumSynthEditor::buildAdvancedView()
         "P Depth", "P Decay",                               // Pitch env 13-14
         "F Att", "F Hold", "F Decay", "F Depth",            // Filter env 15-18
         "A Att", "A Hold", "A Decay",                       // Amp env 19-21
-        "Rate", "Depth", "Rate", "Depth",                   // LFO1/2 22-25
-        "Amount", "Bit Dep"                                  // FX 26-27
+        "Rate", "Rate",                                      // LFO1/2 22-23
+        "Amount", "Bit Dep"                                  // FX 24-25
     };
-    for (int i = 0; i < 28; ++i)
+    for (int i = 0; i < 26; ++i)
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
@@ -307,9 +303,7 @@ void DrumSynthEditor::buildAdvancedView()
         { &ampHoldKnob,     ModTarget::AmpHold },
         { &ampDecKnob,      ModTarget::AmpDecay },
         { &lfo1RateKnob,    ModTarget::Lfo1Rate },
-        { &lfo1DepthKnob,   ModTarget::Lfo1Depth },
         { &lfo2RateKnob,    ModTarget::Lfo2Rate },
-        { &lfo2DepthKnob,   ModTarget::Lfo2Depth },
         { &fx1AmtKnob,      ModTarget::Fx1Amount },
         { &bitDepthKnob,    ModTarget::BitDepth },
         { &macroKnobs[0],   ModTarget::PitchHz,         true },
@@ -363,8 +357,8 @@ void DrumSynthEditor::showBasicView()
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
                      &pEnvDepthKnob, &pEnvDecKnob, &fEnvAttKnob, &fEnvHoldKnob,
                      &fEnvDecKnob, &fEnvDepthKnob, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
-                     &lfo1RateKnob, &lfo1DepthKnob, &lfo1WaveBox,
-                     &lfo2RateKnob, &lfo2DepthKnob, &lfo2WaveBox,
+                     &lfo1RateKnob, &lfo1WaveBox,
+                     &lfo2RateKnob, &lfo2WaveBox,
                      &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob })
         c->setVisible (false);
 
@@ -398,8 +392,8 @@ void DrumSynthEditor::showAdvancedView()
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
                      &pEnvDepthKnob, &pEnvDecKnob, &fEnvAttKnob, &fEnvHoldKnob,
                      &fEnvDecKnob, &fEnvDepthKnob, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
-                     &lfo1RateKnob, &lfo1DepthKnob, &lfo1WaveBox,
-                     &lfo2RateKnob, &lfo2DepthKnob, &lfo2WaveBox,
+                     &lfo1RateKnob, &lfo1WaveBox,
+                     &lfo2RateKnob, &lfo2WaveBox,
                      &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob })
         c->setVisible (true);
 
@@ -578,21 +572,19 @@ void DrumSynthEditor::layoutAdvancedView()
         ampDecKnob .setBounds (x + (C + G)*2, y + 22, C, C);
     }
 
-    // ===== LFO =====
+    // ===== LFO (TransMod sources only) =====
     {
         const int x = kLfoX + 8;
         int y = panelY + 54;
 
-        lbl (22, x,       y + 22);  lbl (23, x + C + G, y + 22);
-        lfo1RateKnob .setBounds (x,       y + 22, C, C);
-        lfo1DepthKnob.setBounds (x + C + G, y + 22, C, C);
+        lbl (22, x, y + 22);
+        lfo1RateKnob .setBounds (x, y + 22, C, C);
         y += 22 + C + 6;
         lfo1WaveBox  .setBounds (x, y, kLfoW - 14, 26);
         y += 26 + 32;
 
-        lbl (24, x,       y + 22);  lbl (25, x + C + G, y + 22);
-        lfo2RateKnob .setBounds (x,       y + 22, C, C);
-        lfo2DepthKnob.setBounds (x + C + G, y + 22, C, C);
+        lbl (23, x, y + 22);
+        lfo2RateKnob .setBounds (x, y + 22, C, C);
         y += 22 + C + 6;
         lfo2WaveBox  .setBounds (x, y, kLfoW - 14, 26);
     }
@@ -602,8 +594,8 @@ void DrumSynthEditor::layoutAdvancedView()
         const int sepY = kAdvH - kFxH;
         const int fxY  = sepY + 8;
         fx1TypeBox  .setBounds (8, fxY + 5, 160, 26);
-        lbl (26, 174,           fxY);
-        lbl (27, 174 + C + G,   fxY);
+        lbl (24, 174,           fxY);
+        lbl (25, 174 + C + G,   fxY);
         fx1AmtKnob  .setBounds (174,         fxY, C, C);
         bitDepthKnob.setBounds (174 + C + G, fxY, C, C);
     }

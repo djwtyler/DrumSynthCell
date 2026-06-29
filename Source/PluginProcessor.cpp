@@ -294,10 +294,8 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("ampHold",         p.ampHold,                      nullptr);
         v.setProperty ("ampDecay",        p.ampDecay,                     nullptr);
         v.setProperty ("lfo1Rate",        p.lfo1Rate,                     nullptr);
-        v.setProperty ("lfo1Depth",       p.lfo1Depth,                    nullptr);
         v.setProperty ("lfo1Wave",        int (p.lfo1Wave),               nullptr);
         v.setProperty ("lfo2Rate",        p.lfo2Rate,                     nullptr);
-        v.setProperty ("lfo2Depth",       p.lfo2Depth,                    nullptr);
         v.setProperty ("lfo2Wave",        int (p.lfo2Wave),               nullptr);
         v.setProperty ("fx1Type",         int (p.fx1Type),                nullptr);
         v.setProperty ("fx1Amount",       p.fx1Amount,                    nullptr);
@@ -373,10 +371,8 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         p.ampHold        = float (v.getProperty ("ampHold",        p.ampHold));
         p.ampDecay       = float (v.getProperty ("ampDecay",       p.ampDecay));
         p.lfo1Rate       = float (v.getProperty ("lfo1Rate",       p.lfo1Rate));
-        p.lfo1Depth      = float (v.getProperty ("lfo1Depth",      p.lfo1Depth));
         p.lfo1Wave       = VP::LfoWave (int (v.getProperty ("lfo1Wave", int (p.lfo1Wave))));
         p.lfo2Rate       = float (v.getProperty ("lfo2Rate",       p.lfo2Rate));
-        p.lfo2Depth      = float (v.getProperty ("lfo2Depth",      p.lfo2Depth));
         p.lfo2Wave       = VP::LfoWave (int (v.getProperty ("lfo2Wave", int (p.lfo2Wave))));
         p.fx1Type        = VP::FxDistType (int (v.getProperty ("fx1Type",  int (p.fx1Type))));
         p.fx1Amount      = float (v.getProperty ("fx1Amount",      p.fx1Amount));
