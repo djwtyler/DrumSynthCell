@@ -3,16 +3,19 @@
 static const char* kChanNames[DrumSynth::NumChannels] =
     { "Kick", "Snare", "Clap", "Tom 1", "Tom 2", "Closed Hat", "Open Hat", "Cymbal" };
 
-// Colour palette
-static const juce::Colour kBg        { 0xffd3dde6 };   // light blue/grey
-static const juce::Colour kPanel     { 0xff22223a };
-static const juce::Colour kPanelLine { 0xff383860 };
+// Colour palette — one blue family applied across the whole plugin, each
+// other colour derived as a relative shade of kBg so the theme stays
+// cohesive instead of mixing in unrelated hardcoded darks.
+static const juce::Colour kBg        { 0xff96b4d7 };          // darker, more saturated blue
+static const juce::Colour kHeaderBg  { kBg.darker (0.18f) };  // header strip — one shade darker than kBg
+static const juce::Colour kPanel     { kBg.darker (0.65f) };  // channel bar / combo / button backgrounds
+static const juce::Colour kPanelLine { kBg.darker (0.72f) };  // separators
 static const juce::Colour kAccent    { 0xff4f8ef7 };
 static const juce::Colour kKnobArc   { 0xff4f8ef7 };
 static const juce::Colour kText      { 0xfff2f2ff };   // near-white — for text on dark surfaces
 static const juce::Colour kTextDark  { 0xff1a1a2e };   // dark navy — for text directly on kBg
-static const juce::Colour kDim       { 0xff52596b };   // dark slate — for dim text directly on kBg
-static const juce::Colour kPadActive { 0xff3a3a60 };
+static const juce::Colour kDim       { 0xff3a4154 };   // dark slate — for dim text directly on kBg
+static const juce::Colour kPadActive { kBg.darker (0.5f) };
 static const juce::Colour kPadSel    { 0xff4f8ef7 };
 
 // ---------------------------------------------------------------------------
@@ -652,6 +655,10 @@ void DrumSynthEditor::resized()
 void DrumSynthEditor::paint (juce::Graphics& g)
 {
     g.fillAll (kBg);
+
+    // Header strip — one shade darker than the main background, in both views
+    g.setColour (kHeaderBg);
+    g.fillRect (0, 0, getWidth(), kHdrH);
 
     // Title
     g.setColour (kTextDark);
