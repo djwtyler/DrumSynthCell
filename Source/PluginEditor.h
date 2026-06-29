@@ -27,7 +27,7 @@ public:
 
         g.setColour (juce::Colour (0xff0e0e1c));
         g.fillRoundedRectangle (b, 3.0f);
-        g.setColour (juce::Colour (0xff252540));
+        g.setColour (juce::Colours::white);
         g.drawRoundedRectangle (b, 3.0f, 1.0f);
 
         // Morph: Sine (0) → Saw (0.5) → Square (1.0)

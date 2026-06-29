@@ -534,7 +534,11 @@ void DrumSynthEditor::layoutAdvancedView()
         // vertical space rather than stacking — they're mutually exclusive
         // (display only shows in Single mode, these knobs only in Partial
         // Shaper), so there's no case where both are visible at once.
-        oscShapeDisplay .setBounds (x, y, (kOscW - 16) / 3, 48);
+        {
+            const int dispW = (kOscW - 16) / 3;
+            const int knobRowW = 2 * C + G;   // Pitch + Shape knobs span
+            oscShapeDisplay.setBounds (x + (knobRowW - dispW) / 2, y, dispW, 48);
+        }
 
         lbl (2, x,         y + 22);  lbl (3, x + C + G, y + 22);
         partPeakKnob    .setBounds (x,         y + 22, C, C);
