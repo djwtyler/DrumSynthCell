@@ -292,7 +292,16 @@ float DrumVoice::applyFx1 (float in) noexcept
 // ---------------------------------------------------------------------------
 void DrumVoice::process (float* dest, int numSamples)
 {
-    if (!ampEnv.isActive()) return;
+    if (!ampEnv.isActive())
+    {
+        // Idle: no audio to render, but keep the LFOs running and the
+        // TransMod snapshot live so the UI's modulation ring keeps
+        // animating between hits instead of freezing at the last value.
+        lfo1.advanceBlock (params.lfo1Rate, numSamples);
+        lfo2.advanceBlock (params.lfo2Rate, numSamples);
+        applyTransMod();
+        return;
+    }
     applyTransMod();
 
     for (int i = 0; i < numSamples; ++i)

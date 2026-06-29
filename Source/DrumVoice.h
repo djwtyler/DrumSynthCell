@@ -191,6 +191,15 @@ public:
         return out;
     }
 
+    // Advances phase by a whole block at once, without computing a sample.
+    // Used to keep the LFO running (for TransMod ring animation) while the
+    // voice is idle, without paying per-sample synthesis cost.
+    void advanceBlock (float rateHz, int numSamples) noexcept
+    {
+        phase += double (rateHz) * double (numSamples) / sampleRate;
+        phase -= std::floor (phase);
+    }
+
     // Returns current value without advancing phase (for TransMod block-start snapshot)
     float peek (float /*rateHz*/, VoiceParams::LfoWave wave) const noexcept
     {

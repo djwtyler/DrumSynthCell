@@ -837,8 +837,19 @@ void DrumSynthEditor::setTransModKnobProps (juce::Slider& s, ModTarget t)
 
 void DrumSynthEditor::timerCallback()
 {
+    // Only knobs that actually carry a routing need to animate; refreshing
+    // (and repainting) all ~36 knobs at 30Hz regardless was needlessly
+    // expensive and is the dominant idle CPU cost without this guard.
+    const auto& tm = proc.getVoice (selectedChannel).transmod;
     for (auto& entry : modKnobs)
-        setTransModKnobProps (*entry.slider, entry.target);
+    {
+        const auto& p = tm.get (entry.target);
+        bool hasDepth = std::abs (p.depths[0]) > 0.0005f
+                     || std::abs (p.depths[1]) > 0.0005f
+                     || std::abs (p.depths[2]) > 0.0005f;
+        if (hasDepth)
+            setTransModKnobProps (*entry.slider, entry.target);
+    }
 }
 
 void DrumSynthEditor::updateTransModUI()
