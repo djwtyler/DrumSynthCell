@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_basics/juce_audio_basics.h>
+#include <atomic>
 
 #include "DrumVoice.h"
 
@@ -40,9 +41,19 @@ public:
 
     DrumSynth::DrumVoice& getVoice (int channel) noexcept { return voices[size_t (channel)]; }
 
+    // --- Master bus ---
+    float masterVolume    = 1.0f;   // linear gain, 0..1.5 (some headroom above unity)
+    bool  limiterEnabled  = true;   // soft-clip (tanh) limiter on the master bus
+
+    // Post-volume/limiter peak of the mono mix for this block, written by
+    // the audio thread and read by the UI for the master meter. Benign
+    // single-writer/single-reader race; never used for DSP.
+    float getMasterPeakLevel() const noexcept { return masterPeakLevel.load (std::memory_order_relaxed); }
+
 private:
     std::array<DrumSynth::DrumVoice, DrumSynth::NumChannels> voices;
     juce::AudioBuffer<float> monoMixBuf;
+    std::atomic<float> masterPeakLevel { 0.0f };
 
     void applyChokeGroups (int triggeredChannel);
     void handleMidiMessage (const juce::MidiMessage& msg);

@@ -253,6 +253,18 @@ void DrumSynthProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     if (samplePos < numSamples)
         for (auto& v : voices) v.process (mix + samplePos, numSamples - samplePos);
 
+    // Master bus: volume, then optional soft-clip limiter
+    float peak = 0.0f;
+    for (int i = 0; i < numSamples; ++i)
+    {
+        float s = mix[i] * masterVolume;
+        if (limiterEnabled)
+            s = std::tanh (s);
+        mix[i] = s;
+        peak = juce::jmax (peak, std::abs (s));
+    }
+    masterPeakLevel.store (peak, std::memory_order_relaxed);
+
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         buffer.addFrom (ch, 0, monoMixBuf, 0, 0, numSamples);
 }
@@ -268,6 +280,8 @@ juce::AudioProcessorEditor* DrumSynthProcessor::createEditor()
 void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     juce::ValueTree state ("DrumSynthCell");
+    state.setProperty ("masterVolume",   masterVolume,   nullptr);
+    state.setProperty ("limiterEnabled", limiterEnabled, nullptr);
     for (int ch = 0; ch < DrumSynth::NumChannels; ++ch)
     {
         const auto& p = voices[size_t (ch)].params;
@@ -340,6 +354,9 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     auto state = juce::ValueTree::readFromData (data, size_t (sizeInBytes));
     if (!state.isValid() || state.getType() != juce::Identifier ("DrumSynthCell")) return;
+
+    masterVolume   = float (state.getProperty ("masterVolume",   masterVolume));
+    limiterEnabled = bool  (state.getProperty ("limiterEnabled", limiterEnabled));
 
     for (int i = 0; i < state.getNumChildren(); ++i)
     {

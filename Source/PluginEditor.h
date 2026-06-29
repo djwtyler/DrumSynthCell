@@ -81,6 +81,60 @@ private:
 };
 
 // ============================================================
+//  MasterMeter — vertical peak meter for the master bus, with a fast
+//  attack / slow decay ballistic so it reads as a smooth level rather
+//  than jittering at the UI refresh rate.
+// ============================================================
+class MasterMeter : public juce::Component
+{
+public:
+    void setLevel (float peak) noexcept
+    {
+        // Skip the repaint entirely once there's nothing left to animate —
+        // silence shouldn't cost a 30Hz repaint forever.
+        if (peak < 0.001f && displayLevel < 0.001f && heldPeak < 0.001f)
+            return;
+
+        if (peak > displayLevel) displayLevel = peak;                  // instant attack
+        else                     displayLevel *= 0.85f;                // ~30Hz-tick decay
+        if (peak > heldPeak) { heldPeak = peak; holdCounter = 0; }
+        else if (++holdCounter > 45) heldPeak *= 0.93f;                 // peak-hold then slow fall
+        repaint();
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto b = getLocalBounds().toFloat().reduced (1.0f);
+        g.setColour (juce::Colour (0xff0e0e1c));
+        g.fillRoundedRectangle (b, 3.0f);
+        g.setColour (juce::Colour (0xff252540));
+        g.drawRoundedRectangle (b, 3.0f, 1.0f);
+
+        auto bar = b.reduced (2.0f);
+        const float h = bar.getHeight() * juce::jlimit (0.0f, 1.0f, displayLevel);
+        if (h > 0.5f)
+        {
+            auto filled = bar.removeFromBottom (h);
+            juce::ColourGradient grad (juce::Colour (0xff3ecfbe), filled.getBottomLeft(),
+                                       juce::Colour (0xffff4f4f), filled.getTopLeft(), false);
+            grad.addColour (0.75, juce::Colour (0xffe8d23e));
+            g.setGradientFill (grad);
+            g.fillRect (filled);
+        }
+
+        // Peak-hold tick
+        const float peakY = bar.getBottom() - bar.getHeight() * juce::jlimit (0.0f, 1.0f, heldPeak);
+        g.setColour (juce::Colours::white);
+        g.fillRect (bar.getX(), peakY - 1.0f, bar.getWidth(), 1.5f);
+    }
+
+private:
+    float displayLevel = 0.0f;
+    float heldPeak     = 0.0f;
+    int   holdCounter  = 0;
+};
+
+// ============================================================
 //  Custom look and feel — dark knob with teal arc + indicator
 // ============================================================
 class DrumSynthLookAndFeel : public juce::LookAndFeel_V4
@@ -300,10 +354,16 @@ private:
     juce::ComboBox     fx1TypeBox;
     juce::Slider       fx1AmtKnob, bitDepthKnob;
 
-    // Per-knob name labels for advanced view (28 total, ordered by panel)
+    // == MASTER section (FX strip, right side; Advanced View only) ==
+    juce::Slider       masterVolKnob;
+    juce::ToggleButton limiterBtn { "Limiter" };
+    MasterMeter        masterMeter;
+    juce::Label        masterHdr { {}, "MASTER" };
+
+    // Per-knob name labels for advanced view, ordered by panel
     // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
-    // ENV:13-21  LFO:22-23  FX:24-25
-    juce::Label advLbl[26];
+    // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26
+    juce::Label advLbl[27];
 
     // ---------------------------------------------------------------
     // Layout constants

@@ -74,6 +74,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (lfo2RateKnob,    0.01, 1000.0, 1.0, " Hz");
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
     setupKnob (bitDepthKnob,    1.0,  24.0, 8.0,  " bit");
+    setupKnob (masterVolKnob,   0.0,  1.5,  1.0);
 
     for (auto& k : macroKnobs)
     {
@@ -239,8 +240,14 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (fx1AmtKnob);
     addChildComponent (bitDepthKnob);
 
+    // MASTER
+    addChildComponent (masterVolKnob);
+    addChildComponent (limiterBtn);
+    addChildComponent (masterMeter);
+    addChildComponent (masterHdr);
+
     // Per-knob labels for advanced view
-    static const char* kAdvLblText[26] = {
+    static const char* kAdvLblText[27] = {
         "Pitch", "Shape", "Peak", "Space", "Roll", "Decay", // OSC 0-5
         "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
         "Amount",                                            // DRIVE 10
@@ -249,9 +256,10 @@ void DrumSynthEditor::buildAdvancedView()
         "Attack", "Hold", "Decay",                          // ENV 2 16-18
         "Attack", "Hold", "Decay",                          // AMP 19-21
         "Rate", "Rate",                                      // LFO1/2 22-23
-        "Amount", "Bit Dep"                                  // FX 24-25
+        "Amount", "Bit Dep",                                 // FX 24-25
+        "Vol"                                                // MASTER 26
     };
-    for (int i = 0; i < 26; ++i)
+    for (int i = 0; i < 27; ++i)
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
@@ -282,6 +290,10 @@ void DrumSynthEditor::buildAdvancedView()
     styleHdr (ampHdr,  kTextDark);
     styleHdr (lfo1Hdr, DrumSynthLookAndFeel::sourceColour (0));
     styleHdr (lfo2Hdr, DrumSynthLookAndFeel::sourceColour (1));
+    styleHdr (masterHdr, kTextDark);
+    limiterBtn.setColour (juce::ToggleButton::textColourId,         kTextDark);
+    limiterBtn.setColour (juce::ToggleButton::tickColourId,         kAccent);
+    limiterBtn.setColour (juce::ToggleButton::tickDisabledColourId, kDim);
 
     // TransMod source selection buttons
     static const char* kSrcNames[kNumModSources] = { "LFO 1", "LFO 2", "Env 1", "Env 2", "Vel" };
@@ -385,7 +397,8 @@ void DrumSynthEditor::showBasicView()
                      &lfo1Hdr, &lfo2Hdr,
                      &lfo1RateKnob, &lfo1WaveBox,
                      &lfo2RateKnob, &lfo2WaveBox,
-                     &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob })
+                     &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob,
+                     &masterVolKnob, &limiterBtn, &masterMeter, &masterHdr })
         c->setVisible (false);
 
     refreshMacros();
@@ -422,7 +435,8 @@ void DrumSynthEditor::showAdvancedView()
                      &lfo1Hdr, &lfo2Hdr,
                      &lfo1RateKnob, &lfo1WaveBox,
                      &lfo2RateKnob, &lfo2WaveBox,
-                     &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob })
+                     &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob,
+                     &masterVolKnob, &limiterBtn, &masterMeter, &masterHdr })
         c->setVisible (true);
 
     updatePadHighlight();
@@ -632,12 +646,20 @@ void DrumSynthEditor::layoutAdvancedView()
     // ===== FX strip =====
     {
         const int sepY = kAdvH - kFxH;
-        const int fxY  = sepY + 8;
+        const int fxY  = sepY + 2;   // C(86) tall knob must fit within kFxH(90)
         fx1TypeBox  .setBounds (8, fxY + 5, 160, 26);
         lbl (24, 174,           fxY);
         lbl (25, 174 + C + G,   fxY);
         fx1AmtKnob  .setBounds (174,         fxY, C, C);
         bitDepthKnob.setBounds (174 + C + G, fxY, C, C);
+
+        // ===== MASTER (right side of the FX strip) =====
+        const int mx = 420;
+        masterHdr.setBounds (mx, sepY + 2, 260, 16);
+        limiterBtn.setBounds (mx, fxY + (C - 22) / 2, 90, 22);
+        lbl (26, mx + 100, fxY);
+        masterVolKnob.setBounds (mx + 100, fxY, C, C);
+        masterMeter  .setBounds (mx + 100 + C + G, fxY, 28, C);
     }
 }
 
@@ -845,6 +867,13 @@ void DrumSynthEditor::connectAdvancedControls()
     lfo1WaveBox     .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo1Wave      = VP::LfoWave(lfo1WaveBox.getSelectedId() - 1); };
     lfo2WaveBox     .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo2Wave      = VP::LfoWave(lfo2WaveBox.getSelectedId() - 1); };
     fx1TypeBox      .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.fx1Type       = VP::FxDistType(fx1TypeBox.getSelectedId() - 1); };
+
+    // Master bus — global, not per-channel, so these write straight to the
+    // processor rather than going through a voice/TransMod
+    masterVolKnob.onValueChange = [this] { if (!updatingUI) proc.masterVolume   = float (masterVolKnob.getValue()); };
+    limiterBtn    .onClick      = [this] { if (!updatingUI) proc.limiterEnabled = limiterBtn.getToggleState(); };
+    masterVolKnob.setValue (proc.masterVolume,   juce::dontSendNotification);
+    limiterBtn   .setToggleState (proc.limiterEnabled, juce::dontSendNotification);
 }
 
 // ---------------------------------------------------------------------------
@@ -876,6 +905,8 @@ void DrumSynthEditor::setTransModKnobProps (juce::Slider& s, ModTarget t)
 
 void DrumSynthEditor::timerCallback()
 {
+    masterMeter.setLevel (proc.getMasterPeakLevel());
+
     // Only knobs that actually carry a routing need to animate; refreshing
     // (and repainting) all ~36 knobs at 30Hz regardless was needlessly
     // expensive and is the dominant idle CPU cost without this guard.
@@ -883,9 +914,9 @@ void DrumSynthEditor::timerCallback()
     for (auto& entry : modKnobs)
     {
         const auto& p = tm.get (entry.target);
-        bool hasDepth = std::abs (p.depths[0]) > 0.0005f
-                     || std::abs (p.depths[1]) > 0.0005f
-                     || std::abs (p.depths[2]) > 0.0005f;
+        bool hasDepth = false;
+        for (int i = 0; i < kNumModSources; ++i)
+            if (std::abs (p.depths[i]) > 0.0005f) { hasDepth = true; break; }
         if (hasDepth)
             setTransModKnobProps (*entry.slider, entry.target);
     }
