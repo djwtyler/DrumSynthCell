@@ -311,7 +311,7 @@ private:
     static constexpr int kPadSize  = 80;
     static constexpr int kPadGap   = 10;
     static constexpr int kHdrH     = 36;
-    static constexpr int kMacroH   = 250;  // 2 rows: each row = 90 knob + 26 label + 4 gap; + 10 between rows
+    static constexpr int kMacroH   = 274;  // 2 rows: each row = 102 knob + 26 label + 4 gap; + 10 between rows
 
     static constexpr int kAdvW     = 1230;
     static constexpr int kAdvChanH = 2 * kPadSize + 3 * kPadGap;   // 190 — pad grid height
@@ -327,9 +327,11 @@ private:
     static constexpr int kEnvX  = 740,  kEnvW  = 290;
     static constexpr int kLfoX  = 1035, kLfoW  = 190;
 
-    static constexpr int kKnob  = 46;   // knob diameter in advanced view
+    static constexpr int kKnob  = 58;   // knob diameter in advanced view (+12 over the
+                                          // rendered circle vs. pre-ring sizing, reserved
+                                          // for the TransMod outer ring band)
     static constexpr int kLblH  = 28;   // text box height under knob
-    static constexpr int kCell  = kKnob + kLblH + 3;  // 77px per knob cell
+    static constexpr int kCell  = kKnob + kLblH + 3;
 
     // ---------------------------------------------------------------
     // Helpers

@@ -4,13 +4,14 @@ static const char* kChanNames[DrumSynth::NumChannels] =
     { "Kick", "Snare", "Clap", "Tom 1", "Tom 2", "Closed Hat", "Open Hat", "Cymbal" };
 
 // Colour palette
-static const juce::Colour kBg        { 0xff1a1a2e };
+static const juce::Colour kBg        { 0xffd3dde6 };   // light blue/grey
 static const juce::Colour kPanel     { 0xff22223a };
 static const juce::Colour kPanelLine { 0xff383860 };
 static const juce::Colour kAccent    { 0xff4f8ef7 };
 static const juce::Colour kKnobArc   { 0xff4f8ef7 };
-static const juce::Colour kText      { 0xfff2f2ff };   // near-white
-static const juce::Colour kDim       { 0xffccccdd };   // light grey
+static const juce::Colour kText      { 0xfff2f2ff };   // near-white — for text on dark surfaces
+static const juce::Colour kTextDark  { 0xff1a1a2e };   // dark navy — for text directly on kBg
+static const juce::Colour kDim       { 0xff52596b };   // dark slate — for dim text directly on kBg
 static const juce::Colour kPadActive { 0xff3a3a60 };
 static const juce::Colour kPadSel    { 0xff4f8ef7 };
 
@@ -22,6 +23,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
       viewToggleBtn ("Advanced")
 {
     setLookAndFeel (&lnf);
+    lnf.setDefaultSansSerifTypefaceName ("Helvetica Neue");
     setSize (kBasicW(), kBasicH());
 
     // Populate lfo wave and other combo items now so they're ready before connect
@@ -251,7 +253,7 @@ void DrumSynthEditor::buildAdvancedView()
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
         advLbl[i].setFont (juce::FontOptions (13.0f));
-        advLbl[i].setColour (juce::Label::textColourId, kText);
+        advLbl[i].setColour (juce::Label::textColourId, kTextDark);
         addChildComponent (advLbl[i]);
     }
 
@@ -259,7 +261,7 @@ void DrumSynthEditor::buildAdvancedView()
     for (auto* btn : { &metallicBtn, &shaperEnabledBtn, &membraneBtn,
                        &noisePinkBtn, &filter4PoleBtn })
     {
-        btn->setColour (juce::ToggleButton::textColourId,      kText);
+        btn->setColour (juce::ToggleButton::textColourId,      kTextDark);
         btn->setColour (juce::ToggleButton::tickColourId,      kAccent);
         btn->setColour (juce::ToggleButton::tickDisabledColourId, kDim);
     }
@@ -274,7 +276,7 @@ void DrumSynthEditor::buildAdvancedView()
     };
     styleHdr (env1Hdr, DrumSynthLookAndFeel::sourceColour (2));
     styleHdr (env2Hdr, DrumSynthLookAndFeel::sourceColour (3));
-    styleHdr (ampHdr,  kText);
+    styleHdr (ampHdr,  kTextDark);
     styleHdr (lfo1Hdr, DrumSynthLookAndFeel::sourceColour (0));
     styleHdr (lfo2Hdr, DrumSynthLookAndFeel::sourceColour (1));
 
@@ -444,11 +446,12 @@ void DrumSynthEditor::layoutBasicView()
         padBtns[size_t (ch)].setBounds (x, y, kPadSize, kPadSize);
     }
 
-    // 4×2 macro grid — each cell: 62px rotary + 28px text box + 26px name label
-    const int knobW  = 62;
-    const int knobH  = 62 + 28;
+    // 4×2 macro grid — each cell: 74px rotary (+12 reserved for the
+    // TransMod outer ring) + 28px text box + 26px name label
+    const int knobW  = 74;
+    const int knobH  = 74 + 28;
     const int cellW  = kPadSize + kPadGap;   // 90px — matches pad column width
-    const int rowH   = knobH + 4 + 26;       // 135px per macro row
+    const int rowH   = knobH + 4 + 26;
     const int macroY = col1Y + kPadSize + kPadGap;
 
     for (int i = 0; i < 8; ++i)
@@ -651,7 +654,7 @@ void DrumSynthEditor::paint (juce::Graphics& g)
     g.fillAll (kBg);
 
     // Title
-    g.setColour (kText);
+    g.setColour (kTextDark);
     g.setFont (juce::FontOptions (28.0f, juce::Font::bold));
     g.drawText ("DrumSynthCell", 8, 0, 300, kHdrH, juce::Justification::centredLeft, false);
 
@@ -668,7 +671,7 @@ void DrumSynthEditor::paint (juce::Graphics& g)
             g.drawVerticalLine (x - 1, float (kAdvTop), float (kAdvH - kFxH));
             if (title.isNotEmpty())
             {
-                g.setColour (kText);
+                g.setColour (kTextDark);
                 g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
                 g.drawText (title, x + 3, kAdvTop + 2, w - 4, 30,
                             juce::Justification::centredLeft, false);
@@ -684,7 +687,7 @@ void DrumSynthEditor::paint (juce::Graphics& g)
         // FX strip separator
         g.setColour (kPanelLine);
         g.drawHorizontalLine (kAdvH - kFxH, 0.0f, float (kAdvW));
-        g.setColour (kText);
+        g.setColour (kTextDark);
         g.setFont (juce::FontOptions (16.0f, juce::Font::bold));
         g.drawText ("FX", 5, kAdvH - kFxH + 12, 36, 22,
                     juce::Justification::centredLeft, false);
