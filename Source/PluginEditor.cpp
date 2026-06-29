@@ -157,7 +157,7 @@ void DrumSynthEditor::buildBasicView()
         macroLabels[size_t (i)].setText (kMacroNames[i], juce::dontSendNotification);
         macroLabels[size_t (i)].setJustificationType (juce::Justification::centred);
         macroLabels[size_t (i)].setColour (juce::Label::textColourId, kDim);
-        macroLabels[size_t (i)].setFont (juce::FontOptions (18.0f));
+        macroLabels[size_t (i)].setFont (juce::FontOptions (20.0f));
         addChildComponent (macroKnobs[size_t (i)]);
         addChildComponent (macroLabels[size_t (i)]);
     }
@@ -263,7 +263,7 @@ void DrumSynthEditor::buildAdvancedView()
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
-        advLbl[i].setFont (juce::FontOptions (13.0f));
+        advLbl[i].setFont (juce::FontOptions (15.0f));
         advLbl[i].setColour (juce::Label::textColourId, kTextDark);
         addChildComponent (advLbl[i]);
     }
@@ -273,7 +273,7 @@ void DrumSynthEditor::buildAdvancedView()
                        &noisePinkBtn, &filter4PoleBtn })
     {
         btn->setColour (juce::ToggleButton::textColourId,      kTextDark);
-        btn->setColour (juce::ToggleButton::tickColourId,      kAccent);
+        btn->setColour (juce::ToggleButton::tickColourId,      juce::Colours::white);
         btn->setColour (juce::ToggleButton::tickDisabledColourId, kDim);
     }
 
@@ -282,7 +282,7 @@ void DrumSynthEditor::buildAdvancedView()
     auto styleHdr = [] (juce::Label& l, juce::Colour c)
     {
         l.setJustificationType (juce::Justification::centredLeft);
-        l.setFont (juce::FontOptions (15.0f, juce::Font::bold));
+        l.setFont (juce::FontOptions (17.0f, juce::Font::bold));
         l.setColour (juce::Label::textColourId, c);
     };
     styleHdr (env1Hdr, DrumSynthLookAndFeel::sourceColour (2));
@@ -292,7 +292,7 @@ void DrumSynthEditor::buildAdvancedView()
     styleHdr (lfo2Hdr, DrumSynthLookAndFeel::sourceColour (1));
     styleHdr (masterHdr, kTextDark);
     limiterBtn.setColour (juce::ToggleButton::textColourId,         kTextDark);
-    limiterBtn.setColour (juce::ToggleButton::tickColourId,         kAccent);
+    limiterBtn.setColour (juce::ToggleButton::tickColourId,         juce::Colours::white);
     limiterBtn.setColour (juce::ToggleButton::tickDisabledColourId, kDim);
 
     // TransMod source selection buttons
@@ -646,7 +646,7 @@ void DrumSynthEditor::layoutAdvancedView()
     // ===== FX strip =====
     {
         const int sepY = kAdvH - kFxH;
-        const int fxY  = sepY + 2;   // C(86) tall knob must fit within kFxH(90)
+        const int fxY  = sepY + 22;   // clears the divider line + label row above it
         fx1TypeBox  .setBounds (8, fxY + 5, 160, 26);
         lbl (24, 174,           fxY);
         lbl (25, 174 + C + G,   fxY);
@@ -655,11 +655,11 @@ void DrumSynthEditor::layoutAdvancedView()
 
         // ===== MASTER (right side of the FX strip) =====
         const int mx = 420;
-        masterHdr.setBounds (mx, sepY + 2, 260, 16);
-        limiterBtn.setBounds (mx, fxY + (C - 22) / 2, 90, 22);
-        lbl (26, mx + 100, fxY);
-        masterVolKnob.setBounds (mx + 100, fxY, C, C);
-        masterMeter  .setBounds (mx + 100 + C + G, fxY, 28, C);
+        masterHdr .setBounds (mx, sepY + 12, 64, 18);
+        limiterBtn.setBounds (mx + 70, fxY + (C - 22) / 2, 80, 22);
+        lbl (26, mx + 160, fxY);
+        masterVolKnob.setBounds (mx + 160,         fxY, C, C);
+        masterMeter  .setBounds (mx + 160 + C + G, fxY, 28, C);
     }
 }
 
@@ -684,7 +684,7 @@ void DrumSynthEditor::paint (juce::Graphics& g)
 
     // Title
     g.setColour (kTextDark);
-    g.setFont (juce::FontOptions (28.0f, juce::Font::bold));
+    g.setFont (juce::FontOptions (30.0f, juce::Font::bold));
     g.drawText ("DrumSynthCell", 8, 0, 300, kHdrH, juce::Justification::centredLeft, false);
 
     if (advancedMode)
@@ -701,7 +701,7 @@ void DrumSynthEditor::paint (juce::Graphics& g)
             if (title.isNotEmpty())
             {
                 g.setColour (kTextDark);
-                g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
+                g.setFont (juce::FontOptions (22.0f, juce::Font::bold));
                 g.drawText (title, x + 3, kAdvTop + 2, w - 4, 30,
                             juce::Justification::centredLeft, false);
             }
@@ -717,7 +717,7 @@ void DrumSynthEditor::paint (juce::Graphics& g)
         g.setColour (kPanelLine);
         g.drawHorizontalLine (kAdvH - kFxH, 0.0f, float (kAdvW));
         g.setColour (kTextDark);
-        g.setFont (juce::FontOptions (16.0f, juce::Font::bold));
+        g.setFont (juce::FontOptions (18.0f, juce::Font::bold));
         g.drawText ("FX", 5, kAdvH - kFxH + 12, 36, 22,
                     juce::Justification::centredLeft, false);
     }

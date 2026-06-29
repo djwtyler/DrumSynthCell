@@ -30,7 +30,7 @@ public:
         if (isMetallic || isShaperOn)
         {
             g.setColour (juce::Colour (0xff555577));
-            g.setFont (juce::FontOptions (11.0f));
+            g.setFont (juce::FontOptions (13.0f));
             g.drawText (isMetallic ? "metallic cluster" : "shaper active",
                         b, juce::Justification::centred);
             return;
@@ -142,7 +142,7 @@ class DrumSynthLookAndFeel : public juce::LookAndFeel_V4
 public:
     juce::Font getLabelFont (juce::Label&) override
     {
-        return juce::Font (juce::FontOptions (16.0f));
+        return juce::Font (juce::FontOptions (18.0f));
     }
 
     static juce::Colour sourceColour (int src) noexcept
@@ -151,7 +151,7 @@ public:
         {
             case 0: return juce::Colour (0xffff8c00);  // LFO1 — orange
             case 1: return juce::Colour (0xffaa44ff);  // LFO2 — purple
-            case 2: return juce::Colour (0xff36c6f0);  // Env1 — cyan
+            case 2: return juce::Colour (0xff14397a);  // Env1 — dark blue
             case 3: return juce::Colour (0xffff4fa3);  // Env2 — pink
             case 4: return juce::Colour (0xff44dd88);  // Velocity — green
             default: return juce::Colours::grey;
@@ -243,7 +243,7 @@ public:
             const float liveEff   = juce::jlimit (0.f, 1.f, tmBase + depths[i] * lives[i]);
             const float liveAngle = rotaryStartAngle + liveEff * (rotaryEndAngle - rotaryStartAngle);
             const float lsin = std::sin (liveAngle), lcos = std::cos (liveAngle);
-            g.setColour (sourceColour (i));
+            g.setColour (juce::Colours::white);
             g.fillEllipse (cx + lsin * ringR - 2.0f, cy - lcos * ringR - 2.0f, 4.0f, 4.0f);
 
             ++slot;
@@ -377,7 +377,8 @@ private:
     static constexpr int kAdvChanH = 2 * kPadSize + 3 * kPadGap;   // 190 — pad grid height
     static constexpr int kAdvH     = 958;
     static constexpr int kAdvTop   = kHdrH + kAdvChanH;   // 226
-    static constexpr int kFxH      = 90;
+    static constexpr int kFxH      = 120;  // tall enough that the FX/Master row's
+                                             // knob labels sit below the divider line
 
     // Panel x positions (left edge) and widths
     static constexpr int kOscX  = 5,    kOscW  = 200;
@@ -424,7 +425,7 @@ private:
         {
             case 0: return juce::Colour (0xffff8c00);  // LFO1 — orange
             case 1: return juce::Colour (0xffaa44ff);  // LFO2 — purple
-            case 2: return juce::Colour (0xff36c6f0);  // Env1 — cyan
+            case 2: return juce::Colour (0xff14397a);  // Env1 — dark blue
             case 3: return juce::Colour (0xffff4fa3);  // Env2 — pink
             case 4: return juce::Colour (0xff44dd88);  // Velocity — green
             default: return juce::Colours::grey;
