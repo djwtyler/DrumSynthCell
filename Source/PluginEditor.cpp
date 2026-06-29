@@ -522,14 +522,15 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kOscX + 8;
         int y = panelY + 54;
 
+        oscModeBox      .setBounds (x, y, kOscW - 14, 26);
+        y += 34;
+
         lbl (0, x,         y + 22);  lbl (1, x + C + G, y + 22);
         pitchKnob       .setBounds (x,         y + 22, C, C);
         oscShapeKnob    .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 6;
         oscShapeDisplay .setBounds (x, y, (kOscW - 16) / 3, 48);
         y += 56;
-        oscModeBox      .setBounds (x, y, kOscW - 14, 26);
-        y += 34;
 
         lbl (2, x,         y + 22);  lbl (3, x + C + G, y + 22);
         partPeakKnob    .setBounds (x,         y + 22, C, C);
