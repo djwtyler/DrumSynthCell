@@ -65,6 +65,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7);
     setupKnob (driveAmtKnob,    0.0,  1.0,  0.0);
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
+    filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
     setupKnob (filterResKnob,   0.0,  1.0,  0.5);
     setupKnob (env1AttKnob,     0.001,2.0,  0.005," s");
     setupKnob (env1HoldKnob,    0.0,  2.0,  0.0,  " s");
@@ -96,6 +97,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (macroKnobs[4],  0.0,    1.0,     0.8);            // Volume
     setupKnob (macroKnobs[5],  0.0,    1.0,     0.0);            // Noise
     setupKnob (macroKnobs[6],  20.0,   20000.0, 12000.0," Hz"); // Flt Cut
+    macroKnobs[6].setSkewFactorFromMidPoint (1000.0);
     setupKnob (macroKnobs[7],  0.0,    1.0,     0.5);            // Resonance
 
     buildBasicView();
