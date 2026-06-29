@@ -197,11 +197,25 @@ public:
             if (std::abs (depths[i]) > 0.0005f) anyDepth = true;
         }
 
+        // tmBase/depths/lives are linearly normalised (TransMod's modNorm/
+        // modDenorm always use a plain min/max fraction), but sliderPos is
+        // skew-aware when the knob has a skew factor (e.g. Pitch, Filter
+        // Cutoff). Convert every TransMod-derived fraction through the
+        // slider's own skew curve before turning it into an angle, or
+        // skewed knobs render the ring/base arc in the wrong place.
+        const double sliderMin = slider.getMinimum();
+        const double sliderMax = slider.getMaximum();
+        auto toSkewedProportion = [&] (float linearFrac) -> float
+        {
+            const double value = sliderMin + double (linearFrac) * (sliderMax - sliderMin);
+            return float (slider.valueToProportionOfLength (value));
+        };
+
         // Inner arc — base value only. Dimmed when this knob carries any
         // modulation (its effective value moves around this anchor);
         // otherwise identical to a plain, unmodulated knob.
         {
-            const float baseAngle = rotaryStartAngle + tmBase * (rotaryEndAngle - rotaryStartAngle);
+            const float baseAngle = rotaryStartAngle + toSkewedProportion (tmBase) * (rotaryEndAngle - rotaryStartAngle);
             juce::Path val;
             val.addArc (cx - trackR, cy - trackR, trackR * 2.0f, trackR * 2.0f,
                         rotaryStartAngle, anyDepth ? baseAngle : angle, true);
@@ -220,9 +234,9 @@ public:
             if (std::abs (depths[i]) < 0.0005f) continue;
 
             const float ringR     = outerR - 1.0f - float (slot) * 3.0f;
-            const float baseAngle = rotaryStartAngle + tmBase * (rotaryEndAngle - rotaryStartAngle);
+            const float baseAngle = rotaryStartAngle + toSkewedProportion (tmBase) * (rotaryEndAngle - rotaryStartAngle);
             const float depthEff  = juce::jlimit (0.f, 1.f, tmBase + depths[i]);
-            const float depthAngle= rotaryStartAngle + depthEff * (rotaryEndAngle - rotaryStartAngle);
+            const float depthAngle= rotaryStartAngle + toSkewedProportion (depthEff) * (rotaryEndAngle - rotaryStartAngle);
             float a0 = baseAngle, a1 = depthAngle;
             if (a0 > a1) std::swap (a0, a1);
 
@@ -234,7 +248,7 @@ public:
             g.fillPath (range);
 
             const float liveEff   = juce::jlimit (0.f, 1.f, tmBase + depths[i] * lives[i]);
-            const float liveAngle = rotaryStartAngle + liveEff * (rotaryEndAngle - rotaryStartAngle);
+            const float liveAngle = rotaryStartAngle + toSkewedProportion (liveEff) * (rotaryEndAngle - rotaryStartAngle);
             const float lsin = std::sin (liveAngle), lcos = std::cos (liveAngle);
             g.setColour (juce::Colours::white);
             g.fillEllipse (cx + lsin * ringR - 2.0f, cy - lcos * ringR - 2.0f, 4.0f, 4.0f);
