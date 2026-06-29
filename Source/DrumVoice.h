@@ -267,6 +267,10 @@ public:
     bool isActive() const noexcept;
     void process (float* dest, int numSamples);
 
+    // Recompute transmod.base for every target from the current params
+    // (e.g. after loading a preset or restoring plugin state)
+    void syncTransModFromParams() noexcept;
+
     VoiceParams   params;
     TransModState transmod;
 

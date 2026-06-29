@@ -33,10 +33,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.ampDecay       = 0.6f;
         p.outputGain     = 0.9f;
     }
-    voices[DrumSynth::Kick].transmod.syncFromParams (
-        voices[DrumSynth::Kick].params.filterCutoff,  voices[DrumSynth::Kick].params.filterResonance,
-        voices[DrumSynth::Kick].params.ampDecay,       voices[DrumSynth::Kick].params.noiseLevel,
-        voices[DrumSynth::Kick].params.driveAmount);
+    voices[DrumSynth::Kick].syncTransModFromParams();
 
     // --- Snare (180 Hz + white noise, slight pitch drop) ---
     {
@@ -56,10 +53,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.oscLevel       = 0.5f;
         p.outputGain     = 0.85f;
     }
-    voices[DrumSynth::Snare].transmod.syncFromParams (
-        voices[DrumSynth::Snare].params.filterCutoff,  voices[DrumSynth::Snare].params.filterResonance,
-        voices[DrumSynth::Snare].params.ampDecay,       voices[DrumSynth::Snare].params.noiseLevel,
-        voices[DrumSynth::Snare].params.driveAmount);
+    voices[DrumSynth::Snare].syncTransModFromParams();
 
     // --- Clap (noise burst, square wave body) ---
     {
@@ -78,10 +72,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.ampDecay       = 0.15f;
         p.outputGain     = 0.8f;
     }
-    voices[DrumSynth::Clap].transmod.syncFromParams (
-        voices[DrumSynth::Clap].params.filterCutoff,  voices[DrumSynth::Clap].params.filterResonance,
-        voices[DrumSynth::Clap].params.ampDecay,       voices[DrumSynth::Clap].params.noiseLevel,
-        voices[DrumSynth::Clap].params.driveAmount);
+    voices[DrumSynth::Clap].syncTransModFromParams();
 
     // --- Tom 1 (120 Hz, partial shaper, membrane mode) ---
     {
@@ -103,10 +94,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.ampDecay       = 0.35f;
         p.outputGain     = 0.85f;
     }
-    voices[DrumSynth::Tom1].transmod.syncFromParams (
-        voices[DrumSynth::Tom1].params.filterCutoff,  voices[DrumSynth::Tom1].params.filterResonance,
-        voices[DrumSynth::Tom1].params.ampDecay,       voices[DrumSynth::Tom1].params.noiseLevel,
-        voices[DrumSynth::Tom1].params.driveAmount);
+    voices[DrumSynth::Tom1].syncTransModFromParams();
 
     // --- Tom 2 (90 Hz, deeper membrane) ---
     {
@@ -128,10 +116,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.ampDecay       = 0.4f;
         p.outputGain     = 0.85f;
     }
-    voices[DrumSynth::Tom2].transmod.syncFromParams (
-        voices[DrumSynth::Tom2].params.filterCutoff,  voices[DrumSynth::Tom2].params.filterResonance,
-        voices[DrumSynth::Tom2].params.ampDecay,       voices[DrumSynth::Tom2].params.noiseLevel,
-        voices[DrumSynth::Tom2].params.driveAmount);
+    voices[DrumSynth::Tom2].syncTransModFromParams();
 
     // --- Closed Hat (808-style metallic cluster, short decay, choke group A) ---
     {
@@ -151,10 +136,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.chokeGroup     = DrumSynth::ChokeGroup::A;
         p.outputGain     = 0.7f;
     }
-    voices[DrumSynth::ClosedHat].transmod.syncFromParams (
-        voices[DrumSynth::ClosedHat].params.filterCutoff,  voices[DrumSynth::ClosedHat].params.filterResonance,
-        voices[DrumSynth::ClosedHat].params.ampDecay,       voices[DrumSynth::ClosedHat].params.noiseLevel,
-        voices[DrumSynth::ClosedHat].params.driveAmount);
+    voices[DrumSynth::ClosedHat].syncTransModFromParams();
 
     // --- Open Hat (same cluster, longer decay, choke group A) ---
     {
@@ -174,10 +156,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.chokeGroup     = DrumSynth::ChokeGroup::A;
         p.outputGain     = 0.7f;
     }
-    voices[DrumSynth::OpenHat].transmod.syncFromParams (
-        voices[DrumSynth::OpenHat].params.filterCutoff,  voices[DrumSynth::OpenHat].params.filterResonance,
-        voices[DrumSynth::OpenHat].params.ampDecay,       voices[DrumSynth::OpenHat].params.noiseLevel,
-        voices[DrumSynth::OpenHat].params.driveAmount);
+    voices[DrumSynth::OpenHat].syncTransModFromParams();
 
     // --- Cymbal (808 metallic, long decay, HP) ---
     {
@@ -196,10 +175,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.ampDecay       = 1.2f;
         p.outputGain     = 0.65f;
     }
-    voices[DrumSynth::Cymbal].transmod.syncFromParams (
-        voices[DrumSynth::Cymbal].params.filterCutoff,  voices[DrumSynth::Cymbal].params.filterResonance,
-        voices[DrumSynth::Cymbal].params.ampDecay,       voices[DrumSynth::Cymbal].params.noiseLevel,
-        voices[DrumSynth::Cymbal].params.driveAmount);
+    voices[DrumSynth::Cymbal].syncTransModFromParams();
 }
 
 void DrumSynthProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -329,6 +305,23 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("oscLevel",        p.oscLevel,                     nullptr);
         v.setProperty ("outputGain",      p.outputGain,                   nullptr);
         v.setProperty ("chokeGroup",      int (p.chokeGroup),             nullptr);
+
+        // TransMod depths: flat "target source value" list, one entry per
+        // non-zero depth. Base values are not stored — they are re-derived
+        // from the params above via syncTransModFromParams() on load.
+        {
+            juce::String depths;
+            const auto& tm = voices[size_t (ch)].transmod;
+            for (int t = 0; t < kNumModTargets; ++t)
+                for (int s = 0; s < kNumModSources; ++s)
+                {
+                    float d = tm.get ((ModTarget) t).depths[s];
+                    if (std::abs (d) > 0.0001f)
+                        depths << t << ' ' << s << ' ' << d << ' ';
+                }
+            v.setProperty ("tmDepths", depths, nullptr);
+        }
+
         state.addChild (v, -1, nullptr);
     }
     juce::MemoryOutputStream mos (destData, true);
@@ -392,9 +385,23 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         p.outputGain     = float (v.getProperty ("outputGain",     p.outputGain));
         p.chokeGroup     = DrumSynth::ChokeGroup (int (v.getProperty ("chokeGroup", int (p.chokeGroup))));
 
-        voices[size_t (ch)].transmod.syncFromParams (
-            p.filterCutoff, p.filterResonance,
-            p.ampDecay, p.noiseLevel, p.driveAmount);
+        voices[size_t (ch)].syncTransModFromParams();
+
+        // Restore TransMod depths saved as a flat "target source value" list
+        auto& tm = voices[size_t (ch)].transmod;
+        for (int t = 0; t < kNumModTargets; ++t)
+            for (int s = 0; s < kNumModSources; ++s)
+                tm.get ((ModTarget) t).depths[s] = 0.0f;
+
+        juce::StringArray toks;
+        toks.addTokens (v.getProperty ("tmDepths", juce::String()).toString(), " ", "");
+        for (int k = 0; k + 2 < toks.size(); k += 3)
+        {
+            int t = toks[k].getIntValue();
+            int s = toks[k + 1].getIntValue();
+            if (t >= 0 && t < kNumModTargets && s >= 0 && s < kNumModSources)
+                tm.get ((ModTarget) t).depths[s] = toks[k + 2].getFloatValue();
+        }
     }
 }
 

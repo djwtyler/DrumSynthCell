@@ -18,6 +18,42 @@ static constexpr std::array<float, 6> kMetallicRatios = {
     1.0000f, 1.4831f, 1.9996f, 2.5010f, 2.9994f, 3.5014f
 };
 
+// TransMod target <-> VoiceParams field bindings. Every continuous
+// synthesis parameter is wired here once, driving both the base-value sync
+// (preset load) and the per-block modulation apply (playback).
+struct ModBinding { ModTarget target; float VoiceParams::* member; };
+static constexpr ModBinding kModBindings[] = {
+    { ModTarget::PitchHz,         &VoiceParams::pitchHz         },
+    { ModTarget::OscShape,        &VoiceParams::oscShape        },
+    { ModTarget::PartialPeak,     &VoiceParams::partialPeak     },
+    { ModTarget::PartialSpace,    &VoiceParams::partialSpace    },
+    { ModTarget::PartialRoll,     &VoiceParams::partialRoll     },
+    { ModTarget::PartialDecay,    &VoiceParams::partialDecay    },
+    { ModTarget::PitchEnvDepth,   &VoiceParams::pitchEnvDepth   },
+    { ModTarget::PitchEnvDecay,   &VoiceParams::pitchEnvDecay   },
+    { ModTarget::NoiseLevel,      &VoiceParams::noiseLevel      },
+    { ModTarget::NoiseDecay,      &VoiceParams::noiseDecay      },
+    { ModTarget::NoiseBPFreq,     &VoiceParams::noiseBPFreq     },
+    { ModTarget::NoiseBPQ,        &VoiceParams::noiseBPQ        },
+    { ModTarget::DriveAmount,     &VoiceParams::driveAmount     },
+    { ModTarget::FilterCutoff,    &VoiceParams::filterCutoff    },
+    { ModTarget::FilterResonance, &VoiceParams::filterResonance },
+    { ModTarget::FilterEnvAttack, &VoiceParams::filterEnvAttack },
+    { ModTarget::FilterEnvHold,   &VoiceParams::filterEnvHold   },
+    { ModTarget::FilterEnvDecay,  &VoiceParams::filterEnvDecay  },
+    { ModTarget::FilterEnvDepth,  &VoiceParams::filterEnvDepth  },
+    { ModTarget::AmpAttack,       &VoiceParams::ampAttack       },
+    { ModTarget::AmpHold,         &VoiceParams::ampHold         },
+    { ModTarget::AmpDecay,        &VoiceParams::ampDecay        },
+    { ModTarget::Lfo1Rate,        &VoiceParams::lfo1Rate        },
+    { ModTarget::Lfo1Depth,       &VoiceParams::lfo1Depth       },
+    { ModTarget::Lfo2Rate,        &VoiceParams::lfo2Rate        },
+    { ModTarget::Lfo2Depth,       &VoiceParams::lfo2Depth       },
+    { ModTarget::Fx1Amount,       &VoiceParams::fx1Amount       },
+    { ModTarget::BitDepth,        &VoiceParams::bitDepth        },
+    { ModTarget::OutputGain,      &VoiceParams::outputGain      },
+};
+
 // ---------------------------------------------------------------------------
 void DrumVoice::prepare (double sr, int /*samplesPerBlock*/)
 {
@@ -92,15 +128,14 @@ void DrumVoice::applyTransMod() noexcept
     modSrcVals[(int)ModSource::LFO2]     = lfo2.peek (params.lfo2Rate, params.lfo2Wave);
     modSrcVals[(int)ModSource::Velocity] = velocity;
 
-    auto apply = [&] (ModTarget t, float& param)
-    {
-        param = modDenorm (t, transmod.get (t).computeNorm (modSrcVals));
-    };
-    apply (ModTarget::FilterCutoff,    params.filterCutoff);
-    apply (ModTarget::FilterResonance, params.filterResonance);
-    apply (ModTarget::AmpDecay,        params.ampDecay);
-    apply (ModTarget::NoiseLevel,      params.noiseLevel);
-    apply (ModTarget::DriveAmount,     params.driveAmount);
+    for (const auto& b : kModBindings)
+        params.*(b.member) = modDenorm (b.target, transmod.get (b.target).computeNorm (modSrcVals));
+}
+
+void DrumVoice::syncTransModFromParams() noexcept
+{
+    for (const auto& b : kModBindings)
+        transmod.get (b.target).base = modNorm (b.target, params.*(b.member));
 }
 
 // ---------------------------------------------------------------------------

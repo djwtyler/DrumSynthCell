@@ -91,7 +91,6 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     buildBasicView();
     buildAdvancedView();
     showAdvancedView();
-    connectMacros();
     connectAdvancedControls();
     refreshAdvanced();
 }
@@ -276,6 +275,56 @@ void DrumSynthEditor::buildAdvancedView()
         };
         addChildComponent (modSrcBtns[size_t (s)]);
     }
+
+    // Every continuous parameter is a TransMod target. Build the registry
+    // (advanced knobs + basic macro knobs, several sharing the same
+    // underlying target) and wire them all the same way: turning a knob
+    // while a source is focused sets that source's depth; double-clicking
+    // a knob while focused clears it (removes the routing).
+    modKnobs = {
+        { &pitchKnob,       ModTarget::PitchHz },
+        { &oscShapeKnob,    ModTarget::OscShape },
+        { &partPeakKnob,    ModTarget::PartialPeak },
+        { &partSpaceKnob,   ModTarget::PartialSpace },
+        { &partRollKnob,    ModTarget::PartialRoll },
+        { &partDecKnob,     ModTarget::PartialDecay },
+        { &pEnvDepthKnob,   ModTarget::PitchEnvDepth },
+        { &pEnvDecKnob,     ModTarget::PitchEnvDecay },
+        { &noiseLevelKnob,  ModTarget::NoiseLevel },
+        { &noiseDecKnob,    ModTarget::NoiseDecay },
+        { &noiseBPFreqKnob, ModTarget::NoiseBPFreq },
+        { &noiseBPQKnob,    ModTarget::NoiseBPQ },
+        { &driveAmtKnob,    ModTarget::DriveAmount },
+        { &filterCutKnob,   ModTarget::FilterCutoff },
+        { &filterResKnob,   ModTarget::FilterResonance },
+        { &fEnvAttKnob,     ModTarget::FilterEnvAttack },
+        { &fEnvHoldKnob,    ModTarget::FilterEnvHold },
+        { &fEnvDecKnob,     ModTarget::FilterEnvDecay },
+        { &fEnvDepthKnob,   ModTarget::FilterEnvDepth },
+        { &ampAttKnob,      ModTarget::AmpAttack },
+        { &ampHoldKnob,     ModTarget::AmpHold },
+        { &ampDecKnob,      ModTarget::AmpDecay },
+        { &lfo1RateKnob,    ModTarget::Lfo1Rate },
+        { &lfo1DepthKnob,   ModTarget::Lfo1Depth },
+        { &lfo2RateKnob,    ModTarget::Lfo2Rate },
+        { &lfo2DepthKnob,   ModTarget::Lfo2Depth },
+        { &fx1AmtKnob,      ModTarget::Fx1Amount },
+        { &bitDepthKnob,    ModTarget::BitDepth },
+        { &macroKnobs[0],   ModTarget::PitchHz,         true },
+        { &macroKnobs[1],   ModTarget::PitchEnvDepth,   true },
+        { &macroKnobs[2],   ModTarget::AmpAttack,       true },
+        { &macroKnobs[3],   ModTarget::AmpDecay,        true },
+        { &macroKnobs[4],   ModTarget::OutputGain,      true },
+        { &macroKnobs[5],   ModTarget::NoiseLevel,      true },
+        { &macroKnobs[6],   ModTarget::FilterCutoff,    true },
+        { &macroKnobs[7],   ModTarget::FilterResonance, true },
+    };
+
+    for (auto& entry : modKnobs)
+    {
+        connectModKnob (*entry.slider, entry.target);
+        entry.slider->addMouseListener (this, false);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -285,6 +334,11 @@ void DrumSynthEditor::showBasicView()
 {
     advancedMode = false;
     setSize (kBasicW(), kBasicH());
+
+    // Basic view has no source-select UI; leaving focus mode active would
+    // make turning a macro knob silently edit a hidden depth instead of
+    // the base value
+    activeModSource = -1;
 
     viewToggleBtn.setButtonText ("Advanced");
     viewToggleBtn.onClick = [this] { showAdvancedView(); };
@@ -643,17 +697,9 @@ void DrumSynthEditor::updateChanHighlight()
 // ---------------------------------------------------------------------------
 void DrumSynthEditor::refreshMacros()
 {
-    updatingUI = true;
-    const auto& p = proc.getVoice (selectedChannel).params;
-    macroKnobs[0].setValue (p.pitchHz,         juce::dontSendNotification);
-    macroKnobs[1].setValue (p.pitchEnvDepth,   juce::dontSendNotification);
-    macroKnobs[2].setValue (p.ampAttack,        juce::dontSendNotification);
-    macroKnobs[3].setValue (p.ampDecay,         juce::dontSendNotification);
-    macroKnobs[4].setValue (p.outputGain,       juce::dontSendNotification);
-    macroKnobs[5].setValue (p.noiseLevel,       juce::dontSendNotification);
-    macroKnobs[6].setValue (p.filterCutoff,     juce::dontSendNotification);
-    macroKnobs[7].setValue (p.filterResonance,  juce::dontSendNotification);
-    updatingUI = false;
+    for (auto& entry : modKnobs)
+        if (entry.isMacro)
+            setTransModKnobProps (*entry.slider, entry.target);
 }
 
 void DrumSynthEditor::refreshAdvanced()
@@ -661,59 +707,26 @@ void DrumSynthEditor::refreshAdvanced()
     updatingUI = true;
     const auto& p = proc.getVoice (selectedChannel).params;
 
-    pitchKnob       .setValue (p.pitchHz,  juce::dontSendNotification);
-    oscShapeKnob    .setValue (p.oscShape, juce::dontSendNotification);
     metallicBtn     .setToggleState (p.metallic,      juce::dontSendNotification);
     shaperEnabledBtn.setToggleState (p.shaperEnabled, juce::dontSendNotification);
     oscShapeKnob    .setEnabled (!p.metallic && !p.shaperEnabled);
-    oscShapeDisplay .setShape (p.oscShape, p.metallic, p.shaperEnabled);
-    partPeakKnob    .setValue (p.partialPeak,     juce::dontSendNotification);
-    partSpaceKnob   .setValue (p.partialSpace,    juce::dontSendNotification);
-    partRollKnob    .setValue (p.partialRoll,     juce::dontSendNotification);
-    partDecKnob     .setValue (p.partialDecay,    juce::dontSendNotification);
-    membraneBtn     .setToggleState (p.membraneMode,      juce::dontSendNotification);
-
-    noiseLevelKnob  .setValue (modDenorm (ModTarget::NoiseLevel, proc.getVoice(selectedChannel).transmod.get(ModTarget::NoiseLevel).base), juce::dontSendNotification);
-    setTransModKnobProps (noiseLevelKnob, ModTarget::NoiseLevel);
-    noiseDecKnob    .setValue (p.noiseDecay,      juce::dontSendNotification);
+    membraneBtn     .setToggleState (p.membraneMode, juce::dontSendNotification);
     noisePinkBtn    .setToggleState (p.noiseColor == DrumSynth::VoiceParams::NoiseColor::Pink,
                                      juce::dontSendNotification);
-    noiseBPFreqKnob .setValue (p.noiseBPFreq,     juce::dontSendNotification);
-    noiseBPQKnob    .setValue (p.noiseBPQ,        juce::dontSendNotification);
-
-    driveAmtKnob    .setValue (modDenorm (ModTarget::DriveAmount, proc.getVoice(selectedChannel).transmod.get(ModTarget::DriveAmount).base), juce::dontSendNotification);
-    setTransModKnobProps (driveAmtKnob, ModTarget::DriveAmount);
-    driveTypeBox    .setSelectedId (int (p.driveType) + 1, juce::dontSendNotification);
-
-    filterModeBox   .setSelectedId (int (p.filterMode)  + 1, juce::dontSendNotification);
-    filterModelBox  .setSelectedId (int (p.filterModel) + 1, juce::dontSendNotification);
+    driveTypeBox    .setSelectedId (int (p.driveType)  + 1, juce::dontSendNotification);
+    filterModeBox   .setSelectedId (int (p.filterMode) + 1, juce::dontSendNotification);
+    filterModelBox  .setSelectedId (int (p.filterModel)+ 1, juce::dontSendNotification);
     filter4PoleBtn  .setToggleState (p.filterFourPole, juce::dontSendNotification);
-    filterCutKnob   .setValue (modDenorm (ModTarget::FilterCutoff,    proc.getVoice(selectedChannel).transmod.get(ModTarget::FilterCutoff).base),    juce::dontSendNotification);
-    filterResKnob   .setValue (modDenorm (ModTarget::FilterResonance, proc.getVoice(selectedChannel).transmod.get(ModTarget::FilterResonance).base), juce::dontSendNotification);
-    setTransModKnobProps (filterCutKnob,  ModTarget::FilterCutoff);
-    setTransModKnobProps (filterResKnob,  ModTarget::FilterResonance);
-
-    pEnvDepthKnob   .setValue (p.pitchEnvDepth,   juce::dontSendNotification);
-    pEnvDecKnob     .setValue (p.pitchEnvDecay,   juce::dontSendNotification);
-    fEnvAttKnob     .setValue (p.filterEnvAttack, juce::dontSendNotification);
-    fEnvHoldKnob    .setValue (p.filterEnvHold,   juce::dontSendNotification);
-    fEnvDecKnob     .setValue (p.filterEnvDecay,  juce::dontSendNotification);
-    fEnvDepthKnob   .setValue (p.filterEnvDepth,  juce::dontSendNotification);
-    ampAttKnob      .setValue (p.ampAttack,        juce::dontSendNotification);
-    ampHoldKnob     .setValue (p.ampHold,          juce::dontSendNotification);
-    ampDecKnob      .setValue (modDenorm (ModTarget::AmpDecay, proc.getVoice(selectedChannel).transmod.get(ModTarget::AmpDecay).base), juce::dontSendNotification);
-    setTransModKnobProps (ampDecKnob, ModTarget::AmpDecay);
-
-    lfo1RateKnob    .setValue (p.lfo1Rate,         juce::dontSendNotification);
-    lfo1DepthKnob   .setValue (p.lfo1Depth,        juce::dontSendNotification);
     lfo1WaveBox     .setSelectedId (int (p.lfo1Wave) + 1, juce::dontSendNotification);
-    lfo2RateKnob    .setValue (p.lfo2Rate,         juce::dontSendNotification);
-    lfo2DepthKnob   .setValue (p.lfo2Depth,        juce::dontSendNotification);
     lfo2WaveBox     .setSelectedId (int (p.lfo2Wave) + 1, juce::dontSendNotification);
+    fx1TypeBox      .setSelectedId (int (p.fx1Type)  + 1, juce::dontSendNotification);
 
-    fx1TypeBox      .setSelectedId (int (p.fx1Type) + 1, juce::dontSendNotification);
-    fx1AmtKnob      .setValue (p.fx1Amount,        juce::dontSendNotification);
-    bitDepthKnob    .setValue (p.bitDepth,         juce::dontSendNotification);
+    // Every continuous knob's value + TransMod arc state comes from modKnobs
+    for (auto& entry : modKnobs)
+        if (!entry.isMacro)
+            setTransModKnobProps (*entry.slider, entry.target);
+
+    oscShapeDisplay.setShape (p.oscShape, p.metallic, p.shaperEnabled);
 
     updatingUI = false;
 }
@@ -721,30 +734,51 @@ void DrumSynthEditor::refreshAdvanced()
 // ---------------------------------------------------------------------------
 // Connect controls (UI → params)
 // ---------------------------------------------------------------------------
-void DrumSynthEditor::connectMacros()
+void DrumSynthEditor::connectModKnob (juce::Slider& s, ModTarget t)
 {
-    macroKnobs[0].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.pitchHz        = float (macroKnobs[0].getValue()); };
-    macroKnobs[1].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.pitchEnvDepth  = float (macroKnobs[1].getValue()); };
-    macroKnobs[2].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.ampAttack      = float (macroKnobs[2].getValue()); };
-    macroKnobs[3].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.ampDecay       = float (macroKnobs[3].getValue()); };
-    macroKnobs[4].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.outputGain     = float (macroKnobs[4].getValue()); };
-    macroKnobs[5].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.noiseLevel     = float (macroKnobs[5].getValue()); };
-    macroKnobs[6].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.filterCutoff   = float (macroKnobs[6].getValue()); };
-    macroKnobs[7].onValueChange = [this] { if (!updatingUI) proc.getVoice (selectedChannel).params.filterResonance= float (macroKnobs[7].getValue()); };
+    s.onValueChange = [this, &s, t]
+    {
+        if (updatingUI) return;
+        auto& tm = proc.getVoice (selectedChannel).transmod.get (t);
+        float n  = modNorm (t, float (s.getValue()));
+        if (activeModSource < 0) tm.base = n;
+        else                     tm.depths[activeModSource] = juce::jlimit (-1.f, 1.f, n - tm.base);
+        setTransModKnobProps (s, t);
+    };
 }
+
+void DrumSynthEditor::mouseDoubleClick (const juce::MouseEvent& e)
+{
+    if (activeModSource < 0) return;   // double-click only removes a depth while a source is focused
+
+    for (auto& entry : modKnobs)
+    {
+        if (entry.slider == e.eventComponent)
+        {
+            proc.getVoice (selectedChannel).transmod.get (entry.target).depths[activeModSource] = 0.0f;
+            setTransModKnobProps (*entry.slider, entry.target);
+            return;
+        }
+    }
+}
+
+// connectMacros() no longer needed — macro knobs are wired generically via
+// modKnobs/connectModKnob in buildAdvancedView()
 
 void DrumSynthEditor::connectAdvancedControls()
 {
     using VP = DrumSynth::VoiceParams;
 
-    pitchKnob       .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.pitchHz = float(pitchKnob.getValue()); };
-    oscShapeKnob    .onValueChange = [this] {
-        if (updatingUI) return;
-        proc.getVoice(selectedChannel).params.oscShape = float(oscShapeKnob.getValue());
-        oscShapeDisplay.setShape (float(oscShapeKnob.getValue()),
+    // oscShapeKnob already has its TransMod onValueChange from connectModKnob;
+    // wrap it so the waveform preview also updates on every change
+    auto prevShapeChange = oscShapeKnob.onValueChange;
+    oscShapeKnob.onValueChange = [this, prevShapeChange] {
+        if (prevShapeChange) prevShapeChange();
+        oscShapeDisplay.setShape (float (oscShapeKnob.getValue()),
                                   metallicBtn.getToggleState(),
                                   shaperEnabledBtn.getToggleState());
     };
+
     metallicBtn     .onClick = [this] {
         if (updatingUI) return;
         bool m = metallicBtn.getToggleState();
@@ -761,87 +795,15 @@ void DrumSynthEditor::connectAdvancedControls()
         oscShapeDisplay.setShape (float(oscShapeKnob.getValue()),
                                   metallicBtn.getToggleState(), sh);
     };
-    partPeakKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialPeak    = float(partPeakKnob.getValue()); };
-    partSpaceKnob   .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialSpace   = float(partSpaceKnob.getValue()); };
-    partRollKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialRoll    = float(partRollKnob.getValue()); };
-    partDecKnob     .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.partialDecay   = float(partDecKnob.getValue()); };
     membraneBtn     .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.membraneMode   = membraneBtn.getToggleState(); };
-
-    noiseLevelKnob.onValueChange = [this] {
-        if (updatingUI) return;
-        auto& voice = proc.getVoice (selectedChannel);
-        auto& tm = voice.transmod.get (ModTarget::NoiseLevel);
-        float n = modNorm (ModTarget::NoiseLevel, float (noiseLevelKnob.getValue()));
-        if (activeModSource < 0) { tm.base = n; voice.params.noiseLevel = float (noiseLevelKnob.getValue()); }
-        else                     { tm.depths[activeModSource] = juce::jlimit (-1.f, 1.f, n - tm.base); }
-        setTransModKnobProps (noiseLevelKnob, ModTarget::NoiseLevel);
-    };
-    noiseDecKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.noiseDecay     = float(noiseDecKnob.getValue()); };
     noisePinkBtn    .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.noiseColor     = noisePinkBtn.getToggleState() ? VP::NoiseColor::Pink : VP::NoiseColor::White; };
-    noiseBPFreqKnob .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.noiseBPFreq   = float(noiseBPFreqKnob.getValue()); };
-    noiseBPQKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.noiseBPQ      = float(noiseBPQKnob.getValue()); };
-
-    driveAmtKnob.onValueChange = [this] {
-        if (updatingUI) return;
-        auto& voice = proc.getVoice (selectedChannel);
-        auto& tm = voice.transmod.get (ModTarget::DriveAmount);
-        float n = modNorm (ModTarget::DriveAmount, float (driveAmtKnob.getValue()));
-        if (activeModSource < 0) { tm.base = n; voice.params.driveAmount = float (driveAmtKnob.getValue()); }
-        else                     { tm.depths[activeModSource] = juce::jlimit (-1.f, 1.f, n - tm.base); }
-        setTransModKnobProps (driveAmtKnob, ModTarget::DriveAmount);
-    };
     driveTypeBox    .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.driveType     = VP::DriveType(driveTypeBox.getSelectedId() - 1); };
-
     filterModeBox   .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterMode    = VP::FilterMode(filterModeBox.getSelectedId() - 1); };
     filterModelBox  .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterModel   = VP::FilterModel(filterModelBox.getSelectedId() - 1); };
     filter4PoleBtn  .onClick       = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterFourPole= filter4PoleBtn.getToggleState(); };
-    filterCutKnob.onValueChange = [this] {
-        if (updatingUI) return;
-        auto& voice = proc.getVoice (selectedChannel);
-        auto& tm = voice.transmod.get (ModTarget::FilterCutoff);
-        float n = modNorm (ModTarget::FilterCutoff, float (filterCutKnob.getValue()));
-        if (activeModSource < 0) { tm.base = n; voice.params.filterCutoff = float (filterCutKnob.getValue()); }
-        else                     { tm.depths[activeModSource] = juce::jlimit (-1.f, 1.f, n - tm.base); }
-        setTransModKnobProps (filterCutKnob, ModTarget::FilterCutoff);
-    };
-    filterResKnob.onValueChange = [this] {
-        if (updatingUI) return;
-        auto& voice = proc.getVoice (selectedChannel);
-        auto& tm = voice.transmod.get (ModTarget::FilterResonance);
-        float n = modNorm (ModTarget::FilterResonance, float (filterResKnob.getValue()));
-        if (activeModSource < 0) { tm.base = n; voice.params.filterResonance = float (filterResKnob.getValue()); }
-        else                     { tm.depths[activeModSource] = juce::jlimit (-1.f, 1.f, n - tm.base); }
-        setTransModKnobProps (filterResKnob, ModTarget::FilterResonance);
-    };
-
-    pEnvDepthKnob   .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.pitchEnvDepth  = float(pEnvDepthKnob.getValue()); };
-    pEnvDecKnob     .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.pitchEnvDecay  = float(pEnvDecKnob.getValue()); };
-    fEnvAttKnob     .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterEnvAttack= float(fEnvAttKnob.getValue()); };
-    fEnvHoldKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterEnvHold  = float(fEnvHoldKnob.getValue()); };
-    fEnvDecKnob     .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterEnvDecay = float(fEnvDecKnob.getValue()); };
-    fEnvDepthKnob   .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.filterEnvDepth = float(fEnvDepthKnob.getValue()); };
-    ampAttKnob      .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.ampAttack      = float(ampAttKnob.getValue()); };
-    ampHoldKnob     .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.ampHold        = float(ampHoldKnob.getValue()); };
-    ampDecKnob.onValueChange = [this] {
-        if (updatingUI) return;
-        auto& voice = proc.getVoice (selectedChannel);
-        auto& tm = voice.transmod.get (ModTarget::AmpDecay);
-        float n = modNorm (ModTarget::AmpDecay, float (ampDecKnob.getValue()));
-        if (activeModSource < 0) { tm.base = n; voice.params.ampDecay = float (ampDecKnob.getValue()); }
-        else                     { tm.depths[activeModSource] = juce::jlimit (-1.f, 1.f, n - tm.base); }
-        setTransModKnobProps (ampDecKnob, ModTarget::AmpDecay);
-    };
-
-    lfo1RateKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo1Rate      = float(lfo1RateKnob.getValue()); };
-    lfo1DepthKnob   .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo1Depth     = float(lfo1DepthKnob.getValue()); };
     lfo1WaveBox     .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo1Wave      = VP::LfoWave(lfo1WaveBox.getSelectedId() - 1); };
-    lfo2RateKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo2Rate      = float(lfo2RateKnob.getValue()); };
-    lfo2DepthKnob   .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo2Depth     = float(lfo2DepthKnob.getValue()); };
     lfo2WaveBox     .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo2Wave      = VP::LfoWave(lfo2WaveBox.getSelectedId() - 1); };
-
     fx1TypeBox      .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.fx1Type       = VP::FxDistType(fx1TypeBox.getSelectedId() - 1); };
-    fx1AmtKnob      .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.fx1Amount     = float(fx1AmtKnob.getValue()); };
-    bitDepthKnob    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.bitDepth      = float(bitDepthKnob.getValue()); };
 }
 
 // ---------------------------------------------------------------------------
@@ -877,11 +839,8 @@ void DrumSynthEditor::updateTransModUI()
                                            sel ? juce::Colours::black : kText);
     }
 
-    if (!advancedMode) return;
-
-    setTransModKnobProps (filterCutKnob,  ModTarget::FilterCutoff);
-    setTransModKnobProps (filterResKnob,  ModTarget::FilterResonance);
-    setTransModKnobProps (ampDecKnob,     ModTarget::AmpDecay);
-    setTransModKnobProps (noiseLevelKnob, ModTarget::NoiseLevel);
-    setTransModKnobProps (driveAmtKnob,   ModTarget::DriveAmount);
+    // Only reachable from modSrcBtns, which are advanced-view-only
+    for (auto& entry : modKnobs)
+        if (!entry.isMacro)
+            setTransModKnobProps (*entry.slider, entry.target);
 }

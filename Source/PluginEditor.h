@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <vector>
 #include "PluginProcessor.h"
 #include "TransMod.h"
 
@@ -323,7 +324,6 @@ private:
     void layoutBasicView();
     void layoutAdvancedView();
 
-    void connectMacros();
     void connectAdvancedControls();
 
     void refreshMacros();
@@ -351,6 +351,16 @@ private:
 
     void updateTransModUI();
     void setTransModKnobProps (juce::Slider& s, ModTarget t);
+
+    // Every continuous parameter is a valid TransMod target. connectModKnob
+    // wires a slider's onValueChange to edit either the base value (no
+    // source focused) or that source's depth (focused); modKnobs is the
+    // registry used to refresh all of them on channel/source change and to
+    // resolve double-click-to-remove.
+    struct ModKnobEntry { juce::Slider* slider; ModTarget target; bool isMacro = false; };
+    std::vector<ModKnobEntry> modKnobs;
+    void connectModKnob (juce::Slider& s, ModTarget t);
+    void mouseDoubleClick (const juce::MouseEvent&) override;
 
     void setupKnob (juce::Slider& s, double lo, double hi, double def,
                     const juce::String& suffix = {});
