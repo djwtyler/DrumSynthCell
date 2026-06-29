@@ -9,12 +9,15 @@
 // ============================================================
 //  OscShapeDisplay — live waveform preview for the OSC section
 // ============================================================
+// Only meaningful in Single oscillator mode; the editor hides this
+// component entirely in Metallic Cluster / Partial Shaper modes rather
+// than swapping in a placeholder caption.
 class OscShapeDisplay : public juce::Component
 {
 public:
-    void setShape (float s, bool metallic, bool shaperOn)
+    void setShape (float s)
     {
-        shape = s;  isMetallic = metallic;  isShaperOn = shaperOn;
+        shape = s;
         repaint();
     }
 
@@ -26,15 +29,6 @@ public:
         g.fillRoundedRectangle (b, 3.0f);
         g.setColour (juce::Colour (0xff252540));
         g.drawRoundedRectangle (b, 3.0f, 1.0f);
-
-        if (isMetallic || isShaperOn)
-        {
-            g.setColour (juce::Colour (0xff555577));
-            g.setFont (juce::FontOptions (13.0f));
-            g.drawText (isMetallic ? "metallic cluster" : "shaper active",
-                        b, juce::Justification::centred);
-            return;
-        }
 
         // Morph: Sine (0) → Saw (0.5) → Square (1.0)
         const float s2   = juce::jlimit (0.0f, 0.9999f, shape) * 2.0f;
@@ -75,9 +69,7 @@ public:
     }
 
 private:
-    float shape     = 0.0f;
-    bool  isMetallic = false;
-    bool  isShaperOn = false;
+    float shape = 0.0f;
 };
 
 // ============================================================

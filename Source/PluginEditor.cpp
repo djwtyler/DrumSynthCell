@@ -802,6 +802,7 @@ void DrumSynthEditor::updateOscModeVisibility()
     bool shaper = (mode == OM::PartialShaper);
 
     oscShapeKnob.setVisible (single);
+    oscShapeDisplay.setVisible (single);   // waveform graphic only means anything in Single mode
     advLbl[1].setVisible (single);   // "Shape"
 
     for (auto* c : std::initializer_list<juce::Component*> {
@@ -809,8 +810,8 @@ void DrumSynthEditor::updateOscModeVisibility()
         c->setVisible (shaper);
     for (int i = 2; i <= 5; ++i) advLbl[i].setVisible (shaper);   // "Peak","Space","Roll","Decay"
 
-    oscShapeDisplay.setShape (float (oscShapeKnob.getValue()),
-                              mode == OM::Metallic, shaper);
+    if (single)
+        oscShapeDisplay.setShape (float (oscShapeKnob.getValue()));
 }
 
 // ---------------------------------------------------------------------------
@@ -856,10 +857,8 @@ void DrumSynthEditor::connectAdvancedControls()
     auto prevShapeChange = oscShapeKnob.onValueChange;
     oscShapeKnob.onValueChange = [this, prevShapeChange] {
         if (prevShapeChange) prevShapeChange();
-        auto mode = proc.getVoice(selectedChannel).params.oscMode;
-        oscShapeDisplay.setShape (float (oscShapeKnob.getValue()),
-                                  mode == VP::OscMode::Metallic,
-                                  mode == VP::OscMode::PartialShaper);
+        if (proc.getVoice(selectedChannel).params.oscMode == VP::OscMode::Single)
+            oscShapeDisplay.setShape (float (oscShapeKnob.getValue()));
     };
 
     oscModeBox.onChange = [this] {
