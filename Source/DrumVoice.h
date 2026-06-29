@@ -30,9 +30,10 @@ struct VoiceParams
     float partialDecay  = 0.5f;  // 0-1: differential high-partial decay rate
     bool  membraneMode  = true;  // true=inharmonic drumskin, false=even harmonics
 
-    // --- Fast Envelope (pitch / transient) ---
-    float pitchEnvDepth  = 0.0f;   // semitones
-    float pitchEnvDecay  = 0.04f;  // seconds
+    // --- Env 1 (general purpose — TransMod source only) ---
+    float env1Attack = 0.005f;
+    float env1Hold   = 0.0f;
+    float env1Decay  = 0.05f;
 
     // --- Noise ---
     float noiseLevel  = 0.0f;
@@ -52,11 +53,10 @@ struct VoiceParams
     float filterCutoff    = 12000.0f;
     float filterResonance = 0.5f;   // 0-1
 
-    // --- Slow Envelope (filter) ---
-    float filterEnvAttack  = 0.005f;
-    float filterEnvHold    = 0.0f;
-    float filterEnvDecay   = 0.3f;
-    float filterEnvDepth   = 0.0f;  // semitones
+    // --- Env 2 (general purpose — TransMod source only) ---
+    float env2Attack = 0.005f;
+    float env2Hold   = 0.0f;
+    float env2Decay  = 0.3f;
 
     // --- Amp Envelope (AHD, hardwired to VCA) ---
     float ampAttack  = 0.002f;
@@ -144,6 +144,15 @@ public:
                 break;
         }
         return value;
+    }
+
+    // Advances by a whole block at once (simple per-sample loop — cheap,
+    // no trig involved). Used for envelopes that exist purely as TransMod
+    // sources, called unconditionally so their snapshot stays live for the
+    // UI even past the point a hardwired consumer would have stopped.
+    void advanceBlock (int numSamples) noexcept
+    {
+        for (int i = 0; i < numSamples; ++i) tick();
     }
 
 private:
@@ -281,7 +290,7 @@ private:
     std::array<float, 8> partialDecayCoeffs  {};  // cached per-partial decay coefficients
 
     // Envelopes
-    AhdEnvelope pitchEnv, filterEnv, ampEnv;
+    AhdEnvelope env1, env2, ampEnv;
 
     // Noise state
     float noiseEnvValue = 0.0f, noiseEnvCoeff = 0.0f;
@@ -302,9 +311,9 @@ private:
     void applyTransMod() noexcept;
 
     // DSP helpers
-    float computeOscSample     (float pitchModSemitones) noexcept;
+    float computeOscSample     ()                         noexcept;
     float computeMetallicSample()                         noexcept;
-    float computePartialSample (float pitchModSemitones) noexcept;
+    float computePartialSample ()                         noexcept;
     float computeNoiseSample   ()                         noexcept;
     float applyDrive           (float in)          const noexcept;
     float applyFilter          (float in, float cutHz)    noexcept;

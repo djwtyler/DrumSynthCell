@@ -97,7 +97,9 @@ public:
         {
             case 0: return juce::Colour (0xffff8c00);  // LFO1 — orange
             case 1: return juce::Colour (0xffaa44ff);  // LFO2 — purple
-            case 2: return juce::Colour (0xff44dd88);  // Velocity — green
+            case 2: return juce::Colour (0xff36c6f0);  // Env1 — cyan
+            case 3: return juce::Colour (0xffff4fa3);  // Env2 — pink
+            case 4: return juce::Colour (0xff44dd88);  // Velocity — green
             default: return juce::Colours::grey;
         }
     }
@@ -247,7 +249,7 @@ private:
     std::array<juce::Slider, 8> macroKnobs;
     std::array<juce::Label,  8> macroLabels;
     static constexpr const char* kMacroNames[8] = {
-        "Tune", "Pitch Env", "Attack", "Decay", "Volume", "Noise", "Flt Cut", "Resonance"
+        "Tune", "Env 1 Dec", "Attack", "Decay", "Volume", "Noise", "Flt Cut", "Resonance"
     };
 
     // ---------------------------------------------------------------
@@ -281,17 +283,16 @@ private:
     juce::ToggleButton filter4PoleBtn { "4-pole" };
     juce::Slider       filterCutKnob, filterResKnob;
 
-    // == ENVELOPES section ==
-    // Fast (pitch)
-    juce::Slider       pEnvDepthKnob, pEnvDecKnob;
-    // Slow (filter)
-    juce::Slider       fEnvAttKnob, fEnvHoldKnob, fEnvDecKnob, fEnvDepthKnob;
-    // Amp
+    // == ENVELOPES section (Env1/Env2 general purpose, Amp hardwired) ==
+    juce::Slider       env1AttKnob, env1HoldKnob, env1DecKnob;
+    juce::Slider       env2AttKnob, env2HoldKnob, env2DecKnob;
     juce::Slider       ampAttKnob, ampHoldKnob, ampDecKnob;
+    juce::Label        env1Hdr { {}, "ENV 1" }, env2Hdr { {}, "ENV 2" }, ampHdr { {}, "AMP" };
 
     // == LFO section (TransMod sources only) ==
     juce::Slider       lfo1RateKnob;
     juce::ComboBox     lfo1WaveBox;
+    juce::Label        lfo1Hdr { {}, "LFO 1" }, lfo2Hdr { {}, "LFO 2" };
     juce::Slider       lfo2RateKnob;
     juce::ComboBox     lfo2WaveBox;
 
@@ -352,7 +353,7 @@ private:
     // ---------------------------------------------------------------
     // TransMod UI state
     // ---------------------------------------------------------------
-    int activeModSource = -1;  // -1 = none, else 0/1/2 → ModSource
+    int activeModSource = -1;  // -1 = none, else 0..4 → ModSource
     std::array<juce::TextButton, kNumModSources> modSrcBtns;
 
     static juce::Colour modSrcColour (int src) noexcept
@@ -361,7 +362,9 @@ private:
         {
             case 0: return juce::Colour (0xffff8c00);  // LFO1 — orange
             case 1: return juce::Colour (0xffaa44ff);  // LFO2 — purple
-            case 2: return juce::Colour (0xff44dd88);  // Velocity — green
+            case 2: return juce::Colour (0xff36c6f0);  // Env1 — cyan
+            case 3: return juce::Colour (0xffff4fa3);  // Env2 — pink
+            case 4: return juce::Colour (0xff44dd88);  // Velocity — green
             default: return juce::Colours::grey;
         }
     }

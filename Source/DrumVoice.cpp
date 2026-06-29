@@ -29,8 +29,9 @@ static constexpr ModBinding kModBindings[] = {
     { ModTarget::PartialSpace,    &VoiceParams::partialSpace    },
     { ModTarget::PartialRoll,     &VoiceParams::partialRoll     },
     { ModTarget::PartialDecay,    &VoiceParams::partialDecay    },
-    { ModTarget::PitchEnvDepth,   &VoiceParams::pitchEnvDepth   },
-    { ModTarget::PitchEnvDecay,   &VoiceParams::pitchEnvDecay   },
+    { ModTarget::Env1Attack,      &VoiceParams::env1Attack      },
+    { ModTarget::Env1Hold,        &VoiceParams::env1Hold        },
+    { ModTarget::Env1Decay,       &VoiceParams::env1Decay       },
     { ModTarget::NoiseLevel,      &VoiceParams::noiseLevel      },
     { ModTarget::NoiseDecay,      &VoiceParams::noiseDecay      },
     { ModTarget::NoiseBPFreq,     &VoiceParams::noiseBPFreq     },
@@ -38,10 +39,9 @@ static constexpr ModBinding kModBindings[] = {
     { ModTarget::DriveAmount,     &VoiceParams::driveAmount     },
     { ModTarget::FilterCutoff,    &VoiceParams::filterCutoff    },
     { ModTarget::FilterResonance, &VoiceParams::filterResonance },
-    { ModTarget::FilterEnvAttack, &VoiceParams::filterEnvAttack },
-    { ModTarget::FilterEnvHold,   &VoiceParams::filterEnvHold   },
-    { ModTarget::FilterEnvDecay,  &VoiceParams::filterEnvDecay  },
-    { ModTarget::FilterEnvDepth,  &VoiceParams::filterEnvDepth  },
+    { ModTarget::Env2Attack,      &VoiceParams::env2Attack      },
+    { ModTarget::Env2Hold,        &VoiceParams::env2Hold        },
+    { ModTarget::Env2Decay,       &VoiceParams::env2Decay       },
     { ModTarget::AmpAttack,       &VoiceParams::ampAttack       },
     { ModTarget::AmpHold,         &VoiceParams::ampHold         },
     { ModTarget::AmpDecay,        &VoiceParams::ampDecay        },
@@ -60,8 +60,8 @@ void DrumVoice::prepare (double sr, int /*samplesPerBlock*/)
     metalPhases .fill (0.0);
     partialPhases.fill (0.0);
 
-    pitchEnv .prepare (sr);
-    filterEnv.prepare (sr);
+    env1     .prepare (sr);
+    env2     .prepare (sr);
     ampEnv   .prepare (sr);
     lfo1     .prepare (sr);
     lfo2     .prepare (sr);
@@ -86,10 +86,9 @@ void DrumVoice::trigger (float vel)
     mainFilter1.reset();
     mainFilter2.reset();
 
-    pitchEnv .trigger (0.001f,                params.pitchEnvDecay > 0 ? params.pitchEnvDecay : 0.001f,
-                       params.pitchEnvDecay);
-    filterEnv.trigger (params.filterEnvAttack, params.filterEnvHold,  params.filterEnvDecay);
-    ampEnv   .trigger (params.ampAttack,       params.ampHold,        params.ampDecay);
+    env1.trigger (params.env1Attack, params.env1Hold, params.env1Decay);
+    env2.trigger (params.env2Attack, params.env2Hold, params.env2Decay);
+    ampEnv.trigger (params.ampAttack, params.ampHold, params.ampDecay);
 
     // Noise envelope (instant attack, exponential decay)
     noiseEnvValue = 1.0f;
@@ -113,9 +112,9 @@ void DrumVoice::trigger (float vel)
 
 void DrumVoice::choke()
 {
-    ampEnv   .choke (0.002f);
-    pitchEnv .choke (0.002f);
-    filterEnv.choke (0.002f);
+    ampEnv.choke (0.002f);
+    env1  .choke (0.002f);
+    env2  .choke (0.002f);
 }
 
 bool DrumVoice::isActive() const noexcept { return ampEnv.isActive(); }
@@ -124,6 +123,8 @@ void DrumVoice::applyTransMod() noexcept
 {
     modSrcVals[(int)ModSource::LFO1]     = lfo1.peek (params.lfo1Rate, params.lfo1Wave);
     modSrcVals[(int)ModSource::LFO2]     = lfo2.peek (params.lfo2Rate, params.lfo2Wave);
+    modSrcVals[(int)ModSource::Env1]     = env1.getValue();
+    modSrcVals[(int)ModSource::Env2]     = env2.getValue();
     modSrcVals[(int)ModSource::Velocity] = velocity;
 
     for (const auto& b : kModBindings)
@@ -140,9 +141,9 @@ void DrumVoice::syncTransModFromParams() noexcept
 // Oscillator helpers
 // ---------------------------------------------------------------------------
 
-float DrumVoice::computeOscSample (float pitchMod) noexcept
+float DrumVoice::computeOscSample() noexcept
 {
-    const float hz  = params.pitchHz * std::pow (2.0f, pitchMod / 12.0f);
+    const float hz  = params.pitchHz;
     const float p   = float (oscPhase);
     const float tpi = juce::MathConstants<float>::twoPi;
 
@@ -175,9 +176,9 @@ float DrumVoice::computeMetallicSample() noexcept
     return sum / 6.0f;
 }
 
-float DrumVoice::computePartialSample (float pitchMod) noexcept
+float DrumVoice::computePartialSample() noexcept
 {
-    const float fundamental = params.pitchHz * std::pow (2.0f, pitchMod / 12.0f);
+    const float fundamental = params.pitchHz;
     const auto& baseRatios  = params.membraneMode ? kMembraneRatios : kHarmonicRatios;
 
     // Differentially decay spectral weights and track total energy
@@ -290,33 +291,28 @@ float DrumVoice::applyFx1 (float in) noexcept
 // ---------------------------------------------------------------------------
 void DrumVoice::process (float* dest, int numSamples)
 {
-    // LFO1/LFO2 exist purely as TransMod sources (no hardwired audio role),
-    // so phase only needs block-rate precision — advance once per call,
-    // active or idle, so the TransMod ring keeps animating between hits.
+    // LFO1/LFO2/Env1/Env2 exist purely as TransMod sources (no hardwired
+    // audio role), so they only need block-rate precision — advance once
+    // per call, active or idle, so the TransMod ring keeps animating
+    // between hits.
     lfo1.advanceBlock (params.lfo1Rate, numSamples);
     lfo2.advanceBlock (params.lfo2Rate, numSamples);
+    env1.advanceBlock (numSamples);
+    env2.advanceBlock (numSamples);
     applyTransMod();
 
     if (!ampEnv.isActive()) return;
 
     for (int i = 0; i < numSamples; ++i)
     {
-        // --- Modulation ---
-        const float pitchEnvVal = pitchEnv.tick();
-        const float pitchMod    = pitchEnvVal * params.pitchEnvDepth;
-
-        const float filterEnvVal = filterEnv.tick();
-        const float cutMod       = filterEnvVal * params.filterEnvDepth;
-        const float cutHz = params.filterCutoff * std::pow (2.0f, cutMod / 12.0f);
-
         // --- Source generation ---
         float osc = 0.0f;
         if (params.metallic)
             osc = computeMetallicSample();
         else if (params.shaperEnabled)
-            osc = computePartialSample (pitchMod);
+            osc = computePartialSample();
         else
-            osc = computeOscSample (pitchMod);
+            osc = computeOscSample();
 
         const float noiseEnv = noiseEnvValue;
         noiseEnvValue *= noiseEnvCoeff;
@@ -329,7 +325,7 @@ void DrumVoice::process (float* dest, int numSamples)
         sig = applyDrive (sig);
 
         // --- Filter ---
-        sig = applyFilter (sig, cutHz);
+        sig = applyFilter (sig, params.filterCutoff);
 
         // --- Post-filter FX ---
         sig = applyFx1 (sig);

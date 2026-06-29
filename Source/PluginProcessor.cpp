@@ -16,8 +16,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.pitchHz        = 60.0f;
         p.oscShape       = 0.0f;          // sine
         p.shaperEnabled  = false;
-        p.pitchEnvDepth  = 24.0f;
-        p.pitchEnvDecay  = 0.04f;
+        p.env1Attack     = 0.001f;
+        p.env1Decay      = 0.04f;
         p.noiseLevel     = 0.05f;
         p.noiseDecay     = 0.04f;
         p.noiseBPFreq    = 600.0f;
@@ -27,20 +27,24 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 800.0f;
         p.filterResonance= 0.3f;
-        p.filterEnvDepth = 12.0f;
-        p.filterEnvDecay = 0.06f;
+        p.env2Decay      = 0.06f;
         p.ampAttack      = 0.002f;
         p.ampDecay       = 0.6f;
         p.outputGain     = 0.9f;
     }
     voices[DrumSynth::Kick].syncTransModFromParams();
+    // Recreate the classic kick pitch/filter sweep via TransMod (Env1->Pitch, Env2->Filter)
+    voices[DrumSynth::Kick].transmod.get (ModTarget::PitchHz)
+        .depths[(int) ModSource::Env1] = 0.09f;
+    voices[DrumSynth::Kick].transmod.get (ModTarget::FilterCutoff)
+        .depths[(int) ModSource::Env2] = 0.04f;
 
     // --- Snare (180 Hz + white noise, slight pitch drop) ---
     {
         auto& p = voices[DrumSynth::Snare].params;
         p.pitchHz        = 180.0f;
-        p.pitchEnvDepth  = 6.0f;
-        p.pitchEnvDecay  = 0.02f;
+        p.env1Attack     = 0.001f;
+        p.env1Decay      = 0.02f;
         p.noiseLevel     = 0.8f;
         p.noiseDecay     = 0.2f;
         p.noiseColor     = VP::NoiseColor::White;
@@ -54,6 +58,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.outputGain     = 0.85f;
     }
     voices[DrumSynth::Snare].syncTransModFromParams();
+    voices[DrumSynth::Snare].transmod.get (ModTarget::PitchHz)
+        .depths[(int) ModSource::Env1] = 0.04f;
 
     // --- Clap (noise burst, square wave body) ---
     {
@@ -84,8 +90,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.partialRoll    = 0.6f;
         p.partialDecay   = 0.4f;
         p.membraneMode   = true;
-        p.pitchEnvDepth  = 12.0f;
-        p.pitchEnvDecay  = 0.03f;
+        p.env1Attack     = 0.001f;
+        p.env1Decay      = 0.03f;
         p.noiseLevel     = 0.1f;
         p.noiseDecay     = 0.05f;
         p.filterMode     = VP::FilterMode::LP;
@@ -95,6 +101,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.outputGain     = 0.85f;
     }
     voices[DrumSynth::Tom1].syncTransModFromParams();
+    voices[DrumSynth::Tom1].transmod.get (ModTarget::PitchHz)
+        .depths[(int) ModSource::Env1] = 0.06f;
 
     // --- Tom 2 (90 Hz, deeper membrane) ---
     {
@@ -106,8 +114,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.partialRoll    = 0.6f;
         p.partialDecay   = 0.4f;
         p.membraneMode   = true;
-        p.pitchEnvDepth  = 12.0f;
-        p.pitchEnvDecay  = 0.03f;
+        p.env1Attack     = 0.001f;
+        p.env1Decay      = 0.03f;
         p.noiseLevel     = 0.1f;
         p.noiseDecay     = 0.05f;
         p.filterMode     = VP::FilterMode::LP;
@@ -117,6 +125,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.outputGain     = 0.85f;
     }
     voices[DrumSynth::Tom2].syncTransModFromParams();
+    voices[DrumSynth::Tom2].transmod.get (ModTarget::PitchHz)
+        .depths[(int) ModSource::Env1] = 0.045f;
 
     // --- Closed Hat (808-style metallic cluster, short decay, choke group A) ---
     {
@@ -272,8 +282,9 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("partialRoll",     p.partialRoll,                  nullptr);
         v.setProperty ("partialDecay",    p.partialDecay,                 nullptr);
         v.setProperty ("membraneMode",    p.membraneMode,                 nullptr);
-        v.setProperty ("pitchEnvDepth",   p.pitchEnvDepth,                nullptr);
-        v.setProperty ("pitchEnvDecay",   p.pitchEnvDecay,                nullptr);
+        v.setProperty ("env1Attack",      p.env1Attack,                   nullptr);
+        v.setProperty ("env1Hold",        p.env1Hold,                     nullptr);
+        v.setProperty ("env1Decay",       p.env1Decay,                    nullptr);
         v.setProperty ("noiseLevel",      p.noiseLevel,                   nullptr);
         v.setProperty ("noiseDecay",      p.noiseDecay,                   nullptr);
         v.setProperty ("noiseColor",      int (p.noiseColor),             nullptr);
@@ -286,10 +297,9 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("filterFourPole",  p.filterFourPole,               nullptr);
         v.setProperty ("filterCutoff",    p.filterCutoff,                 nullptr);
         v.setProperty ("filterResonance", p.filterResonance,              nullptr);
-        v.setProperty ("filterEnvAttack", p.filterEnvAttack,              nullptr);
-        v.setProperty ("filterEnvHold",   p.filterEnvHold,                nullptr);
-        v.setProperty ("filterEnvDecay",  p.filterEnvDecay,               nullptr);
-        v.setProperty ("filterEnvDepth",  p.filterEnvDepth,               nullptr);
+        v.setProperty ("env2Attack",      p.env2Attack,                   nullptr);
+        v.setProperty ("env2Hold",        p.env2Hold,                     nullptr);
+        v.setProperty ("env2Decay",       p.env2Decay,                    nullptr);
         v.setProperty ("ampAttack",       p.ampAttack,                    nullptr);
         v.setProperty ("ampHold",         p.ampHold,                      nullptr);
         v.setProperty ("ampDecay",        p.ampDecay,                     nullptr);
@@ -349,8 +359,9 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         p.partialRoll    = float (v.getProperty ("partialRoll",    p.partialRoll));
         p.partialDecay   = float (v.getProperty ("partialDecay",   p.partialDecay));
         p.membraneMode   = bool  (v.getProperty ("membraneMode",   p.membraneMode));
-        p.pitchEnvDepth  = float (v.getProperty ("pitchEnvDepth",  p.pitchEnvDepth));
-        p.pitchEnvDecay  = float (v.getProperty ("pitchEnvDecay",  p.pitchEnvDecay));
+        p.env1Attack     = float (v.getProperty ("env1Attack",     p.env1Attack));
+        p.env1Hold       = float (v.getProperty ("env1Hold",       p.env1Hold));
+        p.env1Decay      = float (v.getProperty ("env1Decay",      p.env1Decay));
         p.noiseLevel     = float (v.getProperty ("noiseLevel",     p.noiseLevel));
         p.noiseDecay     = float (v.getProperty ("noiseDecay",     p.noiseDecay));
         p.noiseColor     = VP::NoiseColor  (int (v.getProperty ("noiseColor",  int (p.noiseColor))));
@@ -363,10 +374,9 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         p.filterFourPole = bool  (v.getProperty ("filterFourPole", p.filterFourPole));
         p.filterCutoff   = float (v.getProperty ("filterCutoff",   p.filterCutoff));
         p.filterResonance= float (v.getProperty ("filterResonance",p.filterResonance));
-        p.filterEnvAttack= float (v.getProperty ("filterEnvAttack",p.filterEnvAttack));
-        p.filterEnvHold  = float (v.getProperty ("filterEnvHold",  p.filterEnvHold));
-        p.filterEnvDecay = float (v.getProperty ("filterEnvDecay", p.filterEnvDecay));
-        p.filterEnvDepth = float (v.getProperty ("filterEnvDepth", p.filterEnvDepth));
+        p.env2Attack     = float (v.getProperty ("env2Attack",     p.env2Attack));
+        p.env2Hold       = float (v.getProperty ("env2Hold",       p.env2Hold));
+        p.env2Decay      = float (v.getProperty ("env2Decay",      p.env2Decay));
         p.ampAttack      = float (v.getProperty ("ampAttack",      p.ampAttack));
         p.ampHold        = float (v.getProperty ("ampHold",        p.ampHold));
         p.ampDecay       = float (v.getProperty ("ampDecay",       p.ampDecay));

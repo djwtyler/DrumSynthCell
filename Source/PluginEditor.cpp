@@ -56,12 +56,12 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (driveAmtKnob,    0.0,  1.0,  0.0);
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
     setupKnob (filterResKnob,   0.0,  1.0,  0.5);
-    setupKnob (pEnvDepthKnob,   0.0,  48.0, 0.0, " st");
-    setupKnob (pEnvDecKnob,     0.001,2.0,  0.04, " s");
-    setupKnob (fEnvAttKnob,     0.001,2.0,  0.005," s");
-    setupKnob (fEnvHoldKnob,    0.0,  2.0,  0.0,  " s");
-    setupKnob (fEnvDecKnob,     0.001,4.0,  0.3,  " s");
-    setupKnob (fEnvDepthKnob,  -48.0, 48.0, 0.0,  " st");
+    setupKnob (env1AttKnob,     0.001,2.0,  0.005," s");
+    setupKnob (env1HoldKnob,    0.0,  2.0,  0.0,  " s");
+    setupKnob (env1DecKnob,     0.001,4.0,  0.05, " s");
+    setupKnob (env2AttKnob,     0.001,2.0,  0.005," s");
+    setupKnob (env2HoldKnob,    0.0,  2.0,  0.0,  " s");
+    setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s");
     setupKnob (ampAttKnob,      0.001,2.0,  0.002," s");
     setupKnob (ampHoldKnob,     0.0,  2.0,  0.0,  " s");
     setupKnob (ampDecKnob,      0.001,8.0,  0.5,  " s");
@@ -78,7 +78,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
         k.setColour (juce::Slider::rotarySliderOutlineColourId, kPanelLine);
     }
     setupKnob (macroKnobs[0], 20.0,    2000.0,  80.0,  " Hz");  // Tune
-    setupKnob (macroKnobs[1],  0.0,    48.0,    0.0,   " st");  // Pitch Env depth
+    setupKnob (macroKnobs[1],  0.001,  4.0,     0.05,  " s");   // Env 1 decay
     setupKnob (macroKnobs[2],  0.001,  2.0,     0.002, " s");   // Attack
     setupKnob (macroKnobs[3],  0.001,  8.0,     0.5,   " s");   // Decay
     setupKnob (macroKnobs[4],  0.0,    1.0,     0.8);            // Volume
@@ -208,21 +208,26 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (filterResKnob);
 
     // ENVELOPES
-    addChildComponent (pEnvDepthKnob);
-    addChildComponent (pEnvDecKnob);
-    addChildComponent (fEnvAttKnob);
-    addChildComponent (fEnvHoldKnob);
-    addChildComponent (fEnvDecKnob);
-    addChildComponent (fEnvDepthKnob);
+    addChildComponent (env1AttKnob);
+    addChildComponent (env1HoldKnob);
+    addChildComponent (env1DecKnob);
+    addChildComponent (env2AttKnob);
+    addChildComponent (env2HoldKnob);
+    addChildComponent (env2DecKnob);
     addChildComponent (ampAttKnob);
     addChildComponent (ampHoldKnob);
     addChildComponent (ampDecKnob);
+    addChildComponent (env1Hdr);
+    addChildComponent (env2Hdr);
+    addChildComponent (ampHdr);
 
     // LFO
     addChildComponent (lfo1RateKnob);
     addChildComponent (lfo1WaveBox);
     addChildComponent (lfo2RateKnob);
     addChildComponent (lfo2WaveBox);
+    addChildComponent (lfo1Hdr);
+    addChildComponent (lfo2Hdr);
 
     // FX
     addChildComponent (fx1TypeBox);
@@ -235,9 +240,9 @@ void DrumSynthEditor::buildAdvancedView()
         "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
         "Amount",                                            // DRIVE 10
         "Cutoff", "Res",                                     // FILTER 11-12
-        "P Depth", "P Decay",                               // Pitch env 13-14
-        "F Att", "F Hold", "F Decay", "F Depth",            // Filter env 15-18
-        "A Att", "A Hold", "A Decay",                       // Amp env 19-21
+        "Attack", "Hold", "Decay",                          // ENV 1 13-15
+        "Attack", "Hold", "Decay",                          // ENV 2 16-18
+        "Attack", "Hold", "Decay",                          // AMP 19-21
         "Rate", "Rate",                                      // LFO1/2 22-23
         "Amount", "Bit Dep"                                  // FX 24-25
     };
@@ -259,8 +264,22 @@ void DrumSynthEditor::buildAdvancedView()
         btn->setColour (juce::ToggleButton::tickDisabledColourId, kDim);
     }
 
+    // Sub-section headers — coloured to match their TransMod source where
+    // applicable (Env1/Env2/LFO1/LFO2 are sources; Amp is not)
+    auto styleHdr = [] (juce::Label& l, juce::Colour c)
+    {
+        l.setJustificationType (juce::Justification::centredLeft);
+        l.setFont (juce::FontOptions (15.0f, juce::Font::bold));
+        l.setColour (juce::Label::textColourId, c);
+    };
+    styleHdr (env1Hdr, DrumSynthLookAndFeel::sourceColour (2));
+    styleHdr (env2Hdr, DrumSynthLookAndFeel::sourceColour (3));
+    styleHdr (ampHdr,  kText);
+    styleHdr (lfo1Hdr, DrumSynthLookAndFeel::sourceColour (0));
+    styleHdr (lfo2Hdr, DrumSynthLookAndFeel::sourceColour (1));
+
     // TransMod source selection buttons
-    static const char* kSrcNames[kNumModSources] = { "LFO 1", "LFO 2", "Vel" };
+    static const char* kSrcNames[kNumModSources] = { "LFO 1", "LFO 2", "Env 1", "Env 2", "Vel" };
     for (int s = 0; s < kNumModSources; ++s)
     {
         modSrcBtns[size_t (s)].setButtonText (kSrcNames[s]);
@@ -286,8 +305,9 @@ void DrumSynthEditor::buildAdvancedView()
         { &partSpaceKnob,   ModTarget::PartialSpace },
         { &partRollKnob,    ModTarget::PartialRoll },
         { &partDecKnob,     ModTarget::PartialDecay },
-        { &pEnvDepthKnob,   ModTarget::PitchEnvDepth },
-        { &pEnvDecKnob,     ModTarget::PitchEnvDecay },
+        { &env1AttKnob,     ModTarget::Env1Attack },
+        { &env1HoldKnob,    ModTarget::Env1Hold },
+        { &env1DecKnob,     ModTarget::Env1Decay },
         { &noiseLevelKnob,  ModTarget::NoiseLevel },
         { &noiseDecKnob,    ModTarget::NoiseDecay },
         { &noiseBPFreqKnob, ModTarget::NoiseBPFreq },
@@ -295,10 +315,9 @@ void DrumSynthEditor::buildAdvancedView()
         { &driveAmtKnob,    ModTarget::DriveAmount },
         { &filterCutKnob,   ModTarget::FilterCutoff },
         { &filterResKnob,   ModTarget::FilterResonance },
-        { &fEnvAttKnob,     ModTarget::FilterEnvAttack },
-        { &fEnvHoldKnob,    ModTarget::FilterEnvHold },
-        { &fEnvDecKnob,     ModTarget::FilterEnvDecay },
-        { &fEnvDepthKnob,   ModTarget::FilterEnvDepth },
+        { &env2AttKnob,     ModTarget::Env2Attack },
+        { &env2HoldKnob,    ModTarget::Env2Hold },
+        { &env2DecKnob,     ModTarget::Env2Decay },
         { &ampAttKnob,      ModTarget::AmpAttack },
         { &ampHoldKnob,     ModTarget::AmpHold },
         { &ampDecKnob,      ModTarget::AmpDecay },
@@ -307,7 +326,7 @@ void DrumSynthEditor::buildAdvancedView()
         { &fx1AmtKnob,      ModTarget::Fx1Amount },
         { &bitDepthKnob,    ModTarget::BitDepth },
         { &macroKnobs[0],   ModTarget::PitchHz,         true },
-        { &macroKnobs[1],   ModTarget::PitchEnvDepth,   true },
+        { &macroKnobs[1],   ModTarget::Env1Decay,       true },
         { &macroKnobs[2],   ModTarget::AmpAttack,       true },
         { &macroKnobs[3],   ModTarget::AmpDecay,        true },
         { &macroKnobs[4],   ModTarget::OutputGain,      true },
@@ -355,8 +374,10 @@ void DrumSynthEditor::showBasicView()
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
-                     &pEnvDepthKnob, &pEnvDecKnob, &fEnvAttKnob, &fEnvHoldKnob,
-                     &fEnvDecKnob, &fEnvDepthKnob, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
+                     &env1AttKnob, &env1HoldKnob, &env1DecKnob,
+                     &env2AttKnob, &env2HoldKnob, &env2DecKnob,
+                     &env1Hdr, &env2Hdr, &ampHdr, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
+                     &lfo1Hdr, &lfo2Hdr,
                      &lfo1RateKnob, &lfo1WaveBox,
                      &lfo2RateKnob, &lfo2WaveBox,
                      &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob })
@@ -390,8 +411,10 @@ void DrumSynthEditor::showAdvancedView()
                      &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
-                     &pEnvDepthKnob, &pEnvDecKnob, &fEnvAttKnob, &fEnvHoldKnob,
-                     &fEnvDecKnob, &fEnvDepthKnob, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
+                     &env1AttKnob, &env1HoldKnob, &env1DecKnob,
+                     &env2AttKnob, &env2HoldKnob, &env2DecKnob,
+                     &env1Hdr, &env2Hdr, &ampHdr, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
+                     &lfo1Hdr, &lfo2Hdr,
                      &lfo1RateKnob, &lfo1WaveBox,
                      &lfo2RateKnob, &lfo2WaveBox,
                      &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob })
@@ -447,10 +470,10 @@ void DrumSynthEditor::layoutAdvancedView()
     {
         const int tmX  = kPadGap + 4 * (kPadSize + kPadGap) + 24;
         const int tmY  = kHdrH + (kAdvChanH - 44) / 2;
-        const int btnW = 100;
+        const int btnW = 86;
         const int btnH = 44;
         for (int s = 0; s < kNumModSources; ++s)
-            modSrcBtns[size_t (s)].setBounds (tmX + s * (btnW + 10), tmY, btnW, btnH);
+            modSrcBtns[size_t (s)].setBounds (tmX + s * (btnW + 8), tmY, btnW, btnH);
     }
 
     // 4×2 pad grid — identical layout to Basic View
@@ -544,26 +567,33 @@ void DrumSynthEditor::layoutAdvancedView()
         filterResKnob .setBounds (x + C + G, y + 22, C, C);
     }
 
-    // ===== ENVELOPES =====
+    // ===== ENVELOPES (Env1/Env2 general purpose, Amp hardwired) =====
     {
         const int x = kEnvX + 8;
-        int y = panelY + 54;
+        int y = panelY + 16;
 
-        lbl (13, x,       y + 22);  lbl (14, x + C + G, y + 22);
-        pEnvDepthKnob.setBounds (x,       y + 22, C, C);
-        pEnvDecKnob  .setBounds (x + C + G, y + 22, C, C);
-        y += 22 + C + 20;
+        env1Hdr.setBounds (x, y, kEnvW - 16, 20);
+        y += 24;
+        lbl (13, x,             y + 22);
+        lbl (14, x + C + G,     y + 22);
+        lbl (15, x + (C + G)*2, y + 22);
+        env1AttKnob.setBounds (x,             y + 22, C, C);
+        env1HoldKnob.setBounds (x + C + G,     y + 22, C, C);
+        env1DecKnob.setBounds (x + (C + G)*2, y + 22, C, C);
+        y += 22 + C + 16;
 
-        lbl (15, x,       y + 22);  lbl (16, x + C + G, y + 22);
-        fEnvAttKnob  .setBounds (x,       y + 22, C, C);
-        fEnvHoldKnob .setBounds (x + C + G, y + 22, C, C);
-        y += 22 + C + 6;
+        env2Hdr.setBounds (x, y, kEnvW - 16, 20);
+        y += 24;
+        lbl (16, x,             y + 22);
+        lbl (17, x + C + G,     y + 22);
+        lbl (18, x + (C + G)*2, y + 22);
+        env2AttKnob.setBounds (x,             y + 22, C, C);
+        env2HoldKnob.setBounds (x + C + G,     y + 22, C, C);
+        env2DecKnob.setBounds (x + (C + G)*2, y + 22, C, C);
+        y += 22 + C + 16;
 
-        lbl (17, x,       y + 22);  lbl (18, x + C + G, y + 22);
-        fEnvDecKnob  .setBounds (x,       y + 22, C, C);
-        fEnvDepthKnob.setBounds (x + C + G, y + 22, C, C);
-        y += 22 + C + 20;
-
+        ampHdr.setBounds (x, y, kEnvW - 16, 20);
+        y += 24;
         lbl (19, x,             y + 22);
         lbl (20, x + C + G,     y + 22);
         lbl (21, x + (C + G)*2, y + 22);
@@ -575,14 +605,18 @@ void DrumSynthEditor::layoutAdvancedView()
     // ===== LFO (TransMod sources only) =====
     {
         const int x = kLfoX + 8;
-        int y = panelY + 54;
+        int y = panelY + 16;
 
+        lfo1Hdr.setBounds (x, y, kLfoW - 16, 20);
+        y += 24;
         lbl (22, x, y + 22);
         lfo1RateKnob .setBounds (x, y + 22, C, C);
         y += 22 + C + 6;
         lfo1WaveBox  .setBounds (x, y, kLfoW - 14, 26);
-        y += 26 + 32;
+        y += 26 + 24;
 
+        lfo2Hdr.setBounds (x, y, kLfoW - 16, 20);
+        y += 24;
         lbl (23, x, y + 22);
         lfo2RateKnob .setBounds (x, y + 22, C, C);
         y += 22 + C + 6;
@@ -632,17 +666,20 @@ void DrumSynthEditor::paint (juce::Graphics& g)
         {
             g.setColour (kPanelLine);
             g.drawVerticalLine (x - 1, float (kAdvTop), float (kAdvH - kFxH));
-            g.setColour (kText);
-            g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
-            g.drawText (title, x + 3, kAdvTop + 2, w - 4, 30,
-                        juce::Justification::centredLeft, false);
+            if (title.isNotEmpty())
+            {
+                g.setColour (kText);
+                g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
+                g.drawText (title, x + 3, kAdvTop + 2, w - 4, 30,
+                            juce::Justification::centredLeft, false);
+            }
         };
         drawPanel (kOscX,  kOscW,  "OSCILLATOR");
         drawPanel (kNsX,   kNsW,   "NOISE");
         drawPanel (kDrvX,  kDrvW,  "DRIVE");
         drawPanel (kFltX,  kFltW,  "FILTER");
-        drawPanel (kEnvX,  kEnvW,  "ENVELOPES");
-        drawPanel (kLfoX,  kLfoW,  "LFOs");
+        drawPanel (kEnvX,  kEnvW,  {});   // sub-headers (ENV 1/ENV 2/AMP) drawn as labels instead
+        drawPanel (kLfoX,  kLfoW,  {});   // sub-headers (LFO 1/LFO 2) drawn as labels instead
 
         // FX strip separator
         g.setColour (kPanelLine);

@@ -1,7 +1,9 @@
 #pragma once
 
-// Modulation source IDs — matched 1:1 with sources available in DrumVoice
-enum class ModSource : int { LFO1 = 0, LFO2, Velocity, NumSources };
+// Modulation source IDs — matched 1:1 with sources available in DrumVoice.
+// LFO1/LFO2/Env1/Env2 have no hardwired audio role; they exist purely to be
+// assigned to a target via the TransMod focus-and-drag mechanism.
+enum class ModSource : int { LFO1 = 0, LFO2, Env1, Env2, Velocity, NumSources };
 static constexpr int kNumModSources = static_cast<int>(ModSource::NumSources);
 
 // Parameters targetable by TransMod routing.
@@ -15,8 +17,9 @@ enum class ModTarget : int {
     PartialSpace,
     PartialRoll,
     PartialDecay,
-    PitchEnvDepth,
-    PitchEnvDecay,
+    Env1Attack,
+    Env1Hold,
+    Env1Decay,
     NoiseLevel,
     NoiseDecay,
     NoiseBPFreq,
@@ -24,10 +27,9 @@ enum class ModTarget : int {
     DriveAmount,
     FilterCutoff,
     FilterResonance,
-    FilterEnvAttack,
-    FilterEnvHold,
-    FilterEnvDecay,
-    FilterEnvDepth,
+    Env2Attack,
+    Env2Hold,
+    Env2Decay,
     AmpAttack,
     AmpHold,
     AmpDecay,
@@ -50,8 +52,9 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {    0.f,       1.f },   // PartialSpace
     {    0.f,       1.f },   // PartialRoll
     {    0.f,       1.f },   // PartialDecay
-    {    0.f,      48.f },   // PitchEnvDepth
-    {0.001f,       2.f  },   // PitchEnvDecay
+    {0.001f,       2.f  },   // Env1Attack
+    {    0.f,       2.f },   // Env1Hold
+    {0.001f,       4.f  },   // Env1Decay
     {    0.f,       1.f },   // NoiseLevel
     {0.001f,       4.f  },   // NoiseDecay
     {  100.f,   20000.f },   // NoiseBPFreq
@@ -59,10 +62,9 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {    0.f,       1.f },   // DriveAmount
     {   20.f,   20000.f },   // FilterCutoff
     {    0.f,       1.f },   // FilterResonance
-    {0.001f,       2.f  },   // FilterEnvAttack
-    {    0.f,       2.f },   // FilterEnvHold
-    {0.001f,       4.f  },   // FilterEnvDecay
-    {  -48.f,      48.f },   // FilterEnvDepth
+    {0.001f,       2.f  },   // Env2Attack
+    {    0.f,       2.f },   // Env2Hold
+    {0.001f,       4.f  },   // Env2Decay
     {0.001f,       2.f  },   // AmpAttack
     {    0.f,       2.f },   // AmpHold
     {0.001f,       8.f  },   // AmpDecay
