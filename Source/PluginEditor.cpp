@@ -655,7 +655,7 @@ void DrumSynthEditor::layoutAdvancedView()
     {
         const int sepY = kAdvH - kFxH;
         const int fxY  = sepY + 22;   // clears the divider line + label row above it
-        fx1TypeBox  .setBounds (8, fxY + 5, 160, 26);
+        fx1TypeBox  .setBounds (8, sepY + 40, 160, 26);   // clears the "FX" title above it
         lbl (24, 174,           fxY);
         lbl (25, 174 + C + G,   fxY);
         fx1AmtKnob  .setBounds (174,         fxY, C, C);
