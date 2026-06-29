@@ -91,13 +91,27 @@ public:
         return juce::Font (juce::FontOptions (16.0f));
     }
 
+    static juce::Colour sourceColour (int src) noexcept
+    {
+        switch (src)
+        {
+            case 0: return juce::Colour (0xffff8c00);  // LFO1 — orange
+            case 1: return juce::Colour (0xffaa44ff);  // LFO2 — purple
+            case 2: return juce::Colour (0xff44dd88);  // Velocity — green
+            default: return juce::Colours::grey;
+        }
+    }
+
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
                            float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
                            juce::Slider& slider) override
     {
         const float cx     = float (x) + float (width)  * 0.5f;
         const float cy     = float (y) + float (height) * 0.5f;
-        const float radius = juce::jmin (float (width), float (height)) * 0.5f - 2.0f;
+        // outerR is the full available radius; the visible knob body shrinks
+        // a little to leave room for the TransMod rings drawn outside it
+        const float outerR = juce::jmin (float (width), float (height)) * 0.5f - 1.0f;
+        const float radius = outerR - 7.0f;
         const float angle  = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
         // Knob body
@@ -120,65 +134,67 @@ public:
             g.fillPath (track);
         }
 
-        // Read TransMod properties
-        const auto&       props       = slider.getProperties();
-        bool              tmActive    = static_cast<bool>   (props.getWithDefault ("tmActive", false));
-        float             tmBase      = static_cast<float>  (static_cast<double>  (props.getWithDefault ("tmBase", static_cast<double> (sliderPos))));
-        juce::uint32      tmColorARGB = static_cast<juce::uint32> (static_cast<int> (props.getWithDefault ("tmColor", static_cast<int> (0xffccccdd))));
-        juce::Colour      tmColor (tmColorARGB);
+        // Read TransMod properties pushed by the editor (base value, and
+        // per-source depth + live source value, refreshed continuously by
+        // a timer so the rings animate even outside edit mode)
+        const auto& props  = slider.getProperties();
+        const float tmBase = (float) (double) props.getWithDefault ("tmBase", (double) sliderPos);
+        float depths[kNumModSources], lives[kNumModSources];
+        bool  anyDepth = false;
+        for (int i = 0; i < kNumModSources; ++i)
+        {
+            depths[i] = (float) (double) props.getWithDefault ("tmDepth" + juce::String (i), 0.0);
+            lives[i]  = (float) (double) props.getWithDefault ("tmLive"  + juce::String (i), 0.0);
+            if (std::abs (depths[i]) > 0.0005f) anyDepth = true;
+        }
 
-        if (tmActive)
+        // Inner arc — base value only. Dimmed when this knob carries any
+        // modulation (its effective value moves around this anchor);
+        // otherwise identical to a plain, unmodulated knob.
         {
             const float baseAngle = rotaryStartAngle + tmBase * (rotaryEndAngle - rotaryStartAngle);
-
-            // Base value arc — teal, dimmed
-            if (tmBase > 0.001f)
-            {
-                juce::Path baseArc;
-                baseArc.addArc (cx - trackR, cy - trackR, trackR * 2.0f, trackR * 2.0f,
-                                rotaryStartAngle, baseAngle, true);
-                juce::PathStrokeType (3.0f, juce::PathStrokeType::curved,
-                                      juce::PathStrokeType::rounded).createStrokedPath (baseArc, baseArc);
-                g.setColour (juce::Colour (0xff3ecfbe).withAlpha (0.45f));
-                g.fillPath (baseArc);
-            }
-
-            // Mod depth arc — source colour, from base to current (base + depth)
-            if (std::abs (sliderPos - tmBase) > 0.005f)
-            {
-                float arcStart = rotaryStartAngle + tmBase    * (rotaryEndAngle - rotaryStartAngle);
-                float arcEnd   = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
-                if (arcStart > arcEnd) std::swap (arcStart, arcEnd);
-                juce::Path depthArc;
-                depthArc.addArc (cx - trackR, cy - trackR, trackR * 2.0f, trackR * 2.0f,
-                                 arcStart, arcEnd, true);
-                juce::PathStrokeType (3.5f, juce::PathStrokeType::curved,
-                                      juce::PathStrokeType::rounded).createStrokedPath (depthArc, depthArc);
-                g.setColour (tmColor);
-                g.fillPath (depthArc);
-            }
-        }
-        else
-        {
-            // Normal value arc — teal, start → current
             juce::Path val;
             val.addArc (cx - trackR, cy - trackR, trackR * 2.0f, trackR * 2.0f,
-                        rotaryStartAngle, angle, true);
+                        rotaryStartAngle, anyDepth ? baseAngle : angle, true);
             juce::PathStrokeType (3.0f, juce::PathStrokeType::curved,
                                   juce::PathStrokeType::rounded).createStrokedPath (val, val);
-            g.setColour (juce::Colour (0xff3ecfbe));
+            g.setColour (juce::Colour (0xff3ecfbe).withAlpha (anyDepth ? 0.45f : 1.0f));
             g.fillPath (val);
         }
 
-        // When focused by TransMod: draw a coloured ring on the knob border
-        // so that clicking a source button is visually obvious even at depth=0
-        if (tmActive)
+        // Outer rings — one per source with a non-zero depth: a dim range
+        // arc spanning base→base+depth, plus a bright dot at the
+        // instantaneous live position (base + depth × current source value)
+        int slot = 0;
+        for (int i = 0; i < kNumModSources; ++i)
         {
-            g.setColour (tmColor.withAlpha (0.85f));
-            g.drawEllipse (cx - radius, cy - radius, radius * 2.0f, radius * 2.0f, 2.5f);
+            if (std::abs (depths[i]) < 0.0005f) continue;
+
+            const float ringR     = outerR - 1.0f - float (slot) * 3.0f;
+            const float baseAngle = rotaryStartAngle + tmBase * (rotaryEndAngle - rotaryStartAngle);
+            const float depthEff  = juce::jlimit (0.f, 1.f, tmBase + depths[i]);
+            const float depthAngle= rotaryStartAngle + depthEff * (rotaryEndAngle - rotaryStartAngle);
+            float a0 = baseAngle, a1 = depthAngle;
+            if (a0 > a1) std::swap (a0, a1);
+
+            juce::Path range;
+            range.addArc (cx - ringR, cy - ringR, ringR * 2.0f, ringR * 2.0f, a0, a1, true);
+            juce::PathStrokeType (2.0f, juce::PathStrokeType::curved,
+                                  juce::PathStrokeType::rounded).createStrokedPath (range, range);
+            g.setColour (sourceColour (i).withAlpha (0.5f));
+            g.fillPath (range);
+
+            const float liveEff   = juce::jlimit (0.f, 1.f, tmBase + depths[i] * lives[i]);
+            const float liveAngle = rotaryStartAngle + liveEff * (rotaryEndAngle - rotaryStartAngle);
+            const float lsin = std::sin (liveAngle), lcos = std::cos (liveAngle);
+            g.setColour (sourceColour (i));
+            g.fillEllipse (cx + lsin * ringR - 2.0f, cy - lcos * ringR - 2.0f, 4.0f, 4.0f);
+
+            ++slot;
         }
 
-        // Indicator line at current angle
+        // Indicator line at the current drag position (base, or base+depth
+        // of the source being edited while a source is focused)
         const float sinA  = std::sin (angle);
         const float cosA  = std::cos (angle);
         const float inner = radius * 0.38f;
@@ -196,7 +212,8 @@ public:
     }
 };
 
-class DrumSynthEditor : public juce::AudioProcessorEditor
+class DrumSynthEditor : public juce::AudioProcessorEditor,
+                        private juce::Timer
 {
 public:
     explicit DrumSynthEditor (DrumSynthProcessor&);
@@ -361,6 +378,11 @@ private:
     std::vector<ModKnobEntry> modKnobs;
     void connectModKnob (juce::Slider& s, ModTarget t);
     void mouseDoubleClick (const juce::MouseEvent&) override;
+
+    // Drives the live modulation-ring animation (refreshes tmLive* / tmDepth*
+    // properties on every modulatable knob so the outer ring tracks the
+    // running LFO/velocity value even when no source is focused)
+    void timerCallback() override;
 
     void setupKnob (juce::Slider& s, double lo, double hi, double def,
                     const juce::String& suffix = {});

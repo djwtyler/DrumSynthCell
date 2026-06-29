@@ -271,6 +271,14 @@ public:
     // (e.g. after loading a preset or restoring plugin state)
     void syncTransModFromParams() noexcept;
 
+    // Snapshot of the current modulation source values, for UI animation
+    // (read from the message thread; benign race with the audio thread —
+    // used only for a live visual indicator, never for DSP)
+    void getModSourceValues (float out[kNumModSources]) const noexcept
+    {
+        for (int i = 0; i < kNumModSources; ++i) out[i] = modSrcVals[i];
+    }
+
     VoiceParams   params;
     TransModState transmod;
 

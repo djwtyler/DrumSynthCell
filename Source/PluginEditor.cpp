@@ -93,6 +93,8 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     showAdvancedView();
     connectAdvancedControls();
     refreshAdvanced();
+
+    startTimerHz (30);   // animates TransMod outer rings
 }
 
 // ---------------------------------------------------------------------------
@@ -811,21 +813,32 @@ void DrumSynthEditor::connectAdvancedControls()
 // ---------------------------------------------------------------------------
 void DrumSynthEditor::setTransModKnobProps (juce::Slider& s, ModTarget t)
 {
-    const auto& tm  = proc.getVoice (selectedChannel).transmod.get (t);
-    bool        act = (activeModSource >= 0);
-    float       dep = act ? tm.depths[activeModSource] : 0.f;
-    float       eff = juce::jlimit (0.f, 1.f, tm.base + dep);
+    auto&       voice = proc.getVoice (selectedChannel);
+    const auto& tm    = voice.transmod.get (t);
+    bool        act   = (activeModSource >= 0);
+    float       dep   = act ? tm.depths[activeModSource] : 0.f;
+    float       eff   = juce::jlimit (0.f, 1.f, tm.base + dep);
 
-    s.getProperties().set ("tmActive", act);
-    s.getProperties().set ("tmBase",   static_cast<double> (tm.base));
-    s.getProperties().set ("tmColor",  act
-                            ? static_cast<int> (modSrcColour (activeModSource).getARGB())
-                            : static_cast<int> (0xffccccdd));
+    float live[kNumModSources];
+    voice.getModSourceValues (live);
+
+    s.getProperties().set ("tmBase", static_cast<double> (tm.base));
+    for (int i = 0; i < kNumModSources; ++i)
+    {
+        s.getProperties().set ("tmDepth" + juce::String (i), static_cast<double> (tm.depths[i]));
+        s.getProperties().set ("tmLive"  + juce::String (i), static_cast<double> (live[i]));
+    }
 
     updatingUI = true;
     s.setValue (modDenorm (t, eff), juce::dontSendNotification);
     updatingUI = false;
     s.repaint();
+}
+
+void DrumSynthEditor::timerCallback()
+{
+    for (auto& entry : modKnobs)
+        setTransModKnobProps (*entry.slider, entry.target);
 }
 
 void DrumSynthEditor::updateTransModUI()
