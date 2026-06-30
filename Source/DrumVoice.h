@@ -86,8 +86,13 @@ struct VoiceParams
     float eqHighGain  = 0.0f;
 
     // --- Mix & output ---
-    float oscLevel   = 1.0f;
-    float outputGain = 0.8f;
+    // oscLevel/noiseMixGain are the Mixer section's faders — deliberately
+    // NOT TransMod targets. noiseLevel (above, in the Noise section) stays
+    // the modulatable generator-level control; noiseMixGain is a separate,
+    // static final-stage gain multiplying the noise layer into the mix.
+    float oscLevel     = 1.0f;
+    float noiseMixGain = 1.0f;
+    float outputGain   = 0.8f;
 
     // --- Choke ---
     ChokeGroup chokeGroup = ChokeGroup::None;

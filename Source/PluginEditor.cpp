@@ -59,6 +59,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
     setupKnob (partRollKnob,    0.0,  1.0,  0.5);
     setupKnob (partDecKnob,     0.0,  1.0,  0.5);
+    setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
     setupKnob (noiseDecKnob,    0.001,4.0,  0.1);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
     setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7);
@@ -66,9 +67,9 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
     filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
     setupKnob (filterResKnob,   0.0,  1.0,  0.5);
-    setupVSlider (oscLevelSlider,   0.0, 1.0, 1.0);
-    setupVSlider (noiseLevelSlider, 0.0, 1.0, 0.0);
-    setupVSlider (pcmLevelSlider,   0.0, 1.0, 0.0);
+    setupVSlider (oscLevelSlider,     0.0, 1.0, 1.0);
+    setupVSlider (noiseMixGainSlider, 0.0, 1.0, 1.0);
+    setupVSlider (pcmLevelSlider,     0.0, 1.0, 0.0);
     pcmLevelSlider.setEnabled (false);   // placeholder: PCM layer not implemented yet
     setupKnob (env1AttKnob,     0.001,1.0,  0.005," s");
     setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s");
@@ -218,6 +219,7 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (membraneBtn);
 
     // NOISE
+    addChildComponent (noiseLevelKnob);
     addChildComponent (noiseDecKnob);
     addChildComponent (noiseBPFreqKnob);
     addChildComponent (noiseBPQKnob);
@@ -234,10 +236,9 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (filterCutKnob);
     addChildComponent (filterResKnob);
 
-    // MIXER (below Filter)
-    addChildComponent (mixerHdr);
+    // MIXER (separate section below Filter, same column)
     addChildComponent (oscLevelSlider);
-    addChildComponent (noiseLevelSlider);
+    addChildComponent (noiseMixGainSlider);
     addChildComponent (pcmLevelSlider);
 
     // ENVELOPES
@@ -275,9 +276,9 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (playLoopBtn);
 
     // Per-knob labels for advanced view
-    static const char* kAdvLblText[29] = {
+    static const char* kAdvLblText[30] = {
         "Pitch", "Shape", "Peak", "Space", "Roll", "Decay", // OSC 0-5
-        "Noise", "Decay", "BP Freq", "BP Q",                // 6=MIXER, NOISE 7-9
+        "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
         "Amount",                                            // DRIVE 10
         "Cutoff", "Res",                                     // FILTER 11-12
         "Attack", "Hold", "Decay",                          // ENV 1 13-15
@@ -286,9 +287,9 @@ void DrumSynthEditor::buildAdvancedView()
         "Rate", "Rate",                                      // LFO1/2 22-23
         "Amount", "Bit Dep",                                 // FX 24-25
         "Vol",                                                // MASTER 26
-        "Osc", "PCM"                                          // MIXER 27-28
+        "Osc", "Noise", "PCM"                                 // MIXER 27-29
     };
-    for (int i = 0; i < 29; ++i)
+    for (int i = 0; i < 30; ++i)
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
@@ -319,7 +320,6 @@ void DrumSynthEditor::buildAdvancedView()
     styleHdr (lfo1Hdr, DrumSynthLookAndFeel::sourceColour (0));
     styleHdr (lfo2Hdr, DrumSynthLookAndFeel::sourceColour (1));
     styleHdr (masterHdr, kTextDark);
-    styleHdr (mixerHdr,  kTextDark);
     limiterBtn.setColour (juce::ToggleButton::textColourId,         kTextDark);
     limiterBtn.setColour (juce::ToggleButton::tickColourId,         juce::Colours::white);
     limiterBtn.setColour (juce::ToggleButton::tickDisabledColourId, kDim);
@@ -369,7 +369,7 @@ void DrumSynthEditor::buildAdvancedView()
         { &env1AttKnob,     ModTarget::Env1Attack },
         { &env1HoldKnob,    ModTarget::Env1Hold },
         { &env1DecKnob,     ModTarget::Env1Decay },
-        { &noiseLevelSlider,  ModTarget::NoiseLevel },
+        { &noiseLevelKnob,  ModTarget::NoiseLevel },
         { &noiseDecKnob,    ModTarget::NoiseDecay },
         { &noiseBPFreqKnob, ModTarget::NoiseBPFreq },
         { &noiseBPQKnob,    ModTarget::NoiseBPQ },
@@ -386,7 +386,6 @@ void DrumSynthEditor::buildAdvancedView()
         { &lfo2RateKnob,    ModTarget::Lfo2Rate },
         { &fx1AmtKnob,      ModTarget::Fx1Amount },
         { &bitDepthKnob,    ModTarget::BitDepth },
-        { &oscLevelSlider,  ModTarget::OscLevel },
         { &macroKnobs[0],   ModTarget::PitchHz,         true },
         { &macroKnobs[1],   ModTarget::Env1Decay,       true },
         { &macroKnobs[2],   ModTarget::AmpAttack,       true },
@@ -433,10 +432,10 @@ void DrumSynthEditor::showBasicView()
     for (auto* c : std::initializer_list<juce::Component*> {
                      &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
-                     &noiseLevelSlider, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
+                     &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
-                     &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
-                     &mixerHdr, &oscLevelSlider, &noiseLevelSlider, &pcmLevelSlider,
+                     &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob, &noiseLevelKnob,
+                     &oscLevelSlider, &noiseMixGainSlider, &pcmLevelSlider,
                      &env1AttKnob, &env1HoldKnob, &env1DecKnob,
                      &env2AttKnob, &env2HoldKnob, &env2DecKnob,
                      &env1Hdr, &env2Hdr, &ampHdr, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
@@ -472,10 +471,10 @@ void DrumSynthEditor::showAdvancedView()
     for (auto* c : std::initializer_list<juce::Component*> {
                      &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
-                     &noiseLevelSlider, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
+                     &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
-                     &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
-                     &mixerHdr, &oscLevelSlider, &noiseLevelSlider, &pcmLevelSlider,
+                     &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob, &noiseLevelKnob,
+                     &oscLevelSlider, &noiseMixGainSlider, &pcmLevelSlider,
                      &env1AttKnob, &env1HoldKnob, &env1DecKnob,
                      &env2AttKnob, &env2HoldKnob, &env2DecKnob,
                      &env1Hdr, &env2Hdr, &ampHdr, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
@@ -604,8 +603,9 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kNsX + 8;
         int y = panelY + 54;
 
-        lbl (7, x, y + 22);
-        noiseDecKnob    .setBounds (x, y + 22, C, C);
+        lbl (6, x,       y + 22);  lbl (7, x + C + G, y + 22);
+        noiseLevelKnob  .setBounds (x,       y + 22, C, C);
+        noiseDecKnob    .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 8;
         noisePinkBtn    .setBounds (x, y, kNsW - 14, 22);
         y += 30;
@@ -638,21 +638,23 @@ void DrumSynthEditor::layoutAdvancedView()
         lbl (11, x,       y + 22);  lbl (12, x + C + G, y + 22);
         filterCutKnob .setBounds (x,       y + 22, C, C);
         filterResKnob .setBounds (x + C + G, y + 22, C, C);
-        y += 22 + C + 24;
+    }
 
-        // ===== MIXER (below Filter, same column; vertical faders) =====
-        mixerHdr.setBounds (x, y, kFltW - 16, 20);
-        y += 24;
-        {
-            const int sliderW = 50, sliderGap = 15, sliderH = 200;
-            advLbl[27].setBounds (x,                       y, sliderW, 16);   // Osc
-            advLbl[6] .setBounds (x + sliderW + sliderGap, y, sliderW, 16);   // Noise
-            advLbl[28].setBounds (x + 2 * (sliderW + sliderGap), y, sliderW, 16); // PCM
-            y += 20;
-            oscLevelSlider  .setBounds (x,                       y, sliderW, sliderH);
-            noiseLevelSlider.setBounds (x + sliderW + sliderGap, y, sliderW, sliderH);
-            pcmLevelSlider  .setBounds (x + 2 * (sliderW + sliderGap), y, sliderW, sliderH);
-        }
+    // ===== MIXER (separate section below Filter, same column, divided by
+    // a horizontal line + "MIXER" title drawn in paint(); vertical faders;
+    // none of these three are TransMod targets) =====
+    {
+        const int x = kFltX + 8;
+        int y = panelY + kFltContentH + 54;   // mirrors the "panelY + 54" every panel uses below its own title
+
+        const int sliderW = 50, sliderGap = 15, sliderH = 200;
+        advLbl[27].setBounds (x,                             y, sliderW, 16);   // Osc
+        advLbl[28].setBounds (x + sliderW + sliderGap,       y, sliderW, 16);   // Noise
+        advLbl[29].setBounds (x + 2 * (sliderW + sliderGap), y, sliderW, 16);   // PCM
+        y += 20;
+        oscLevelSlider    .setBounds (x,                             y, sliderW, sliderH);
+        noiseMixGainSlider.setBounds (x + sliderW + sliderGap,       y, sliderW, sliderH);
+        pcmLevelSlider    .setBounds (x + 2 * (sliderW + sliderGap), y, sliderW, sliderH);
     }
 
     // ===== ENVELOPES (Env1/Env2 general purpose, Amp hardwired) =====
@@ -781,6 +783,20 @@ void DrumSynthEditor::paint (juce::Graphics& g)
         drawPanel (kFltX,  kFltW,  "FILTER");
         drawPanel (kEnvX,  kEnvW,  {});   // sub-headers (ENV 1/ENV 2/AMP) drawn as labels instead
         drawPanel (kLfoX,  kLfoW,  {});   // sub-headers (LFO 1/LFO 2) drawn as labels instead
+
+        // MIXER — a totally separate section from Filter (same column),
+        // divided by a horizontal line rather than the vertical lines used
+        // between adjacent columns, with a title in the same style as
+        // OSCILLATOR/NOISE/DRIVE/FILTER above.
+        {
+            const int mixDividerY = kAdvTop + kFltContentH;
+            g.setColour (kPanelLine);
+            g.drawHorizontalLine (mixDividerY, float (kFltX), float (kFltX + kFltW));
+            g.setColour (kTextDark);
+            g.setFont (juce::FontOptions (22.0f, juce::Font::bold));
+            g.drawText ("MIXER", kFltX + 3, mixDividerY + 2, kFltW - 4, 30,
+                        juce::Justification::centredLeft, false);
+        }
 
         // FX strip separator
         g.setColour (kPanelLine);

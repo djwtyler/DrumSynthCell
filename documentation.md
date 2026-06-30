@@ -120,12 +120,13 @@ An independent noise generator mixed with the oscillator signal.
 
 | Control   | Description                                              | Range          |
 |-----------|----------------------------------------------------------|----------------|
+| Level     | Noise generator level (TransMod target)                  | 0 – 1          |
 | Decay     | Exponential noise envelope decay time                    | 0.001 – 4 s    |
 | BP Freq   | Bandpass centre frequency for noise colouring            | 20 – 18 000 Hz |
 | BP Q      | Bandpass Q (width) — higher values narrow the band       | 0.1 – 20       |
 | Pink      | Switches noise colour from white to pink (–3 dB/octave) |                |
 
-The noise always has its own fast exponential envelope (instant attack). Noise mix level lives in the Mixer section, not here.
+The noise always has its own fast exponential envelope (instant attack). Level is also a TransMod target; the Mixer section's separate Noise fader applies an additional, non-modulatable final mix gain on top.
 
 ---
 
@@ -163,13 +164,16 @@ The filter envelope and LFO 2 modulate cutoff additively in semitones.
 
 ### MIXER Section
 
-Three vertical faders, located below the Filter section, setting the relative
-level of each synthesis layer before they're summed and sent to Drive/Filter.
+A totally separate section from Filter (same column, divided by a horizontal
+line rather than the vertical lines used between adjacent panels). Three
+vertical faders set the final mix balance of each synthesis layer. **None of
+the three are TransMod destinations** — they're static gain stages, separate
+from any modulatable level control the layer's own section may have.
 
 | Control | Description                                                | Range |
 |---------|-------------------------------------------------------------|-------|
-| Osc     | Oscillator level (TransMod target)                          | 0 – 1 |
-| Noise   | Noise generator level (TransMod target) — moved here from the Noise section |  0 – 1 |
+| Osc     | Oscillator level — the only level control for the oscillator layer | 0 – 1 |
+| Noise   | Final noise mix gain — separate from the Noise section's Level knob, which remains the generator's own modulatable level (TransMod target) | 0 – 1 |
 | PCM     | Reserved for the PRD's planned Vintage PCM Layer; disabled until that synthesis layer is implemented | 0 – 1 |
 
 ---

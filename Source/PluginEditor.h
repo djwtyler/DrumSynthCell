@@ -360,7 +360,9 @@ private:
     juce::ToggleButton membraneBtn  { "Membrane" };      // Partial Shaper only
 
     // == NOISE section ==
-    juce::Slider       noiseDecKnob, noiseBPFreqKnob, noiseBPQKnob;
+    // Level is the generator's own modulatable level (TransMod target) —
+    // distinct from the Mixer's non-modulatable noiseMixGain fader.
+    juce::Slider       noiseLevelKnob, noiseDecKnob, noiseBPFreqKnob, noiseBPQKnob;
     juce::ToggleButton noisePinkBtn { "Pink" };
 
     // == DRIVE section ==
@@ -372,11 +374,12 @@ private:
     juce::ToggleButton filter4PoleBtn { "4-pole" };
     juce::Slider       filterCutKnob, filterResKnob;
 
-    // == MIXER section (below Filter; vertical faders) ==
+    // == MIXER section (separate section below Filter, same column,
+    //    divided by a horizontal line; vertical faders; none of these
+    //    three are TransMod targets) ==
     // PCM level is a placeholder for the PRD's planned Vintage PCM Layer —
     // disabled until that synthesis layer exists.
-    juce::Label        mixerHdr { {}, "MIXER" };
-    juce::Slider       oscLevelSlider, noiseLevelSlider, pcmLevelSlider;
+    juce::Slider       oscLevelSlider, noiseMixGainSlider, pcmLevelSlider;
 
     // == ENVELOPES section (Env1/Env2 general purpose, Amp hardwired) ==
     juce::Slider       env1AttKnob, env1HoldKnob, env1DecKnob;
@@ -408,9 +411,9 @@ private:
     juce::uint32       lastPlayLoopMs = 0;
 
     // Per-knob name labels for advanced view, ordered by panel
-    // OSC:0-5  NOISE:7-9 (6 was Noise Level, moved to MIXER)  DRIVE:10  FILTER:11-12
-    // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26  MIXER:6,27,28 (Noise/Osc/PCM)
-    juce::Label advLbl[29];
+    // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
+    // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26  MIXER:27-29 (Osc/Noise/PCM)
+    juce::Label advLbl[30];
 
     // ---------------------------------------------------------------
     // Layout constants
@@ -440,6 +443,13 @@ private:
                                           // for the TransMod outer ring band)
     static constexpr int kLblH  = 28;   // text box height under knob
     static constexpr int kCell  = kKnob + kLblH + 3;
+
+    // Height of Filter's own controls (mode/model/4-pole row + cutoff/res
+    // knobs), measured from panelY. Shared by layoutAdvancedView() (where
+    // the Mixer sub-section content starts below it) and paint() (where
+    // the horizontal divider + "MIXER" title are drawn) so they can't drift
+    // out of sync.
+    static constexpr int kFltContentH = 54 + 34 + 34 + 22 + kKnob + kLblH;
 
     // ---------------------------------------------------------------
     // Helpers

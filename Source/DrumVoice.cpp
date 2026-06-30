@@ -50,7 +50,6 @@ static constexpr ModBinding kModBindings[] = {
     { ModTarget::Fx1Amount,       &VoiceParams::fx1Amount       },
     { ModTarget::BitDepth,        &VoiceParams::bitDepth        },
     { ModTarget::OutputGain,      &VoiceParams::outputGain      },
-    { ModTarget::OscLevel,        &VoiceParams::oscLevel        },
 };
 
 // ---------------------------------------------------------------------------
@@ -321,7 +320,7 @@ void DrumVoice::process (float* dest, int numSamples)
         const float noise = computeNoiseSample() * noiseEnv;
 
         // --- Mix ---
-        float sig = osc * params.oscLevel + noise * params.noiseLevel;
+        float sig = osc * params.oscLevel + noise * params.noiseLevel * params.noiseMixGain;
 
         // --- Pre-filter drive ---
         sig = applyDrive (sig);

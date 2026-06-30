@@ -314,6 +314,7 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("fx1Amount",       p.fx1Amount,                    nullptr);
         v.setProperty ("bitDepth",        p.bitDepth,                     nullptr);
         v.setProperty ("oscLevel",        p.oscLevel,                     nullptr);
+        v.setProperty ("noiseMixGain",    p.noiseMixGain,                 nullptr);
         v.setProperty ("outputGain",      p.outputGain,                   nullptr);
         v.setProperty ("chokeGroup",      int (p.chokeGroup),             nullptr);
 
@@ -393,6 +394,7 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         p.fx1Amount      = float (v.getProperty ("fx1Amount",      p.fx1Amount));
         p.bitDepth       = float (v.getProperty ("bitDepth",       p.bitDepth));
         p.oscLevel       = float (v.getProperty ("oscLevel",       p.oscLevel));
+        p.noiseMixGain   = float (v.getProperty ("noiseMixGain",   p.noiseMixGain));
         p.outputGain     = float (v.getProperty ("outputGain",     p.outputGain));
         p.chokeGroup     = DrumSynth::ChokeGroup (int (v.getProperty ("chokeGroup", int (p.chokeGroup))));
 
