@@ -70,9 +70,9 @@ Eight macro knobs below the pads, each controlling the most significant paramete
 | Knob       | Parameter         | Range                         |
 |------------|-------------------|--------------------------------|
 | Tune       | Pitch (Hz)        | 20 – 20 000 Hz (300Hz @ 12 o'clock) |
-| Env 1 Dec  | Env 1 decay       | 0.1 – 2 s                      |
+| Env 1 Dec  | Env 1 decay       | 0.001 – 2 s                    |
 | Attack     | Amp attack        | 0.001 – 1 s                    |
-| Decay      | Amp decay         | 0.1 – 4 s                      |
+| Decay      | Amp decay         | 0.001 – 4 s                    |
 | Volume     | Output gain       | 0 – 1                           |
 | Noise      | Noise level       | 0 – 1                           |
 | Flt Cut    | Filter cutoff     | 20 – 20 000 Hz (1000Hz @ 12 o'clock) |
@@ -123,7 +123,7 @@ An independent noise generator mixed with the oscillator signal.
 | Control   | Description                                              | Range          |
 |-----------|----------------------------------------------------------|----------------|
 | Level     | Noise generator level (TransMod target)                  | 0 – 1          |
-| Decay     | Exponential noise envelope decay time                    | 0.1 – 2 s      |
+| Decay     | Exponential noise envelope decay time                    | 0.001 – 2 s    |
 | BP Freq   | Bandpass centre frequency for noise colouring            | 20 – 18 000 Hz |
 | BP Q      | Bandpass Q (width) — higher values narrow the band       | 0.1 – 20       |
 | Pink      | Switches noise colour from white to pink (–3 dB/octave) |                |
@@ -157,10 +157,17 @@ A two-stage state-variable filter (SVF, Chamberlin topology) placed after the dr
 | Mode      | LP / HP / BP / Peak / Notch                         |                |
 | Model     | Clean or Fat (reserved for future alternate topology) |               |
 | 4-pole    | Chains two SVF stages for steeper 4-pole response   |                |
-| Cutoff    | Filter cutoff frequency (TransMod target)           | 20 – 20 000 Hz |
+| Cutoff    | Filter cutoff frequency (TransMod target), 1000Hz at 12 o'clock | 20 – 20 000 Hz |
 | Resonance | Filter Q (TransMod target)                          | 0 – 1          |
 
-The filter envelope and LFO 2 modulate cutoff additively in semitones.
+Cutoff (and Pitch, Noise BP Freq) display in kHz above 1000Hz rather than Hz.
+Cutoff is internally clamped to 45% of the sample rate (not the full Nyquist)
+since the Chamberlin SVF becomes numerically unstable as cutoff approaches
+Nyquist, especially at high resonance — the filter's internal state is also
+guarded against any resulting Inf/NaN.
+
+Factory presets typically route Env 2 → Filter Cutoff via TransMod for the
+classic filter sweep.
 
 ---
 
@@ -193,7 +200,7 @@ knob). Amp is hardwired to the VCA.
 |---------|-------------------------|---------------|---------------|
 | Attack  | Attack time             | 0.001 – 1 s   | 0.001 – 2 s   |
 | Hold    | Hold time at peak       | 0 – 1 s       | 0 – 2 s       |
-| Decay   | Exponential decay time (TransMod target) | 0.1 – 2 s | 0.1 – 4 s |
+| Decay   | Exponential decay time (TransMod target) | 0.001 – 2 s | 0.001 – 4 s |
 
 Factory presets typically route Env 1 → Pitch (the classic kick/tom/snare
 pitch drop) and Env 2 → Filter Cutoff.
@@ -204,7 +211,7 @@ pitch drop) and Env 2 → Filter Cutoff.
 |---------|-----------------------------------|-------------|
 | Attack  | VCA attack time                   | 0.001 – 1 s |
 | Hold    | VCA hold time at peak              | 0 – 1 s     |
-| Decay   | VCA decay time (TransMod target)  | 0.1 – 4 s   |
+| Decay   | VCA decay time (TransMod target)  | 0.001 – 4 s |
 
 The voice stays active until the amp envelope reaches silence. The `isActive()` state is driven entirely by this envelope.
 

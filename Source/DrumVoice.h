@@ -42,7 +42,7 @@ struct VoiceParams
     // --- Env 1 (general purpose — TransMod source only) ---
     float env1Attack = 0.005f;
     float env1Hold   = 0.0f;
-    float env1Decay  = 0.1f;
+    float env1Decay  = 0.05f;
 
     // --- Noise ---
     float noiseLevel  = 0.0f;
@@ -237,7 +237,13 @@ public:
     float process (float in, float cutHz, float q,
                    VoiceParams::FilterMode mode) noexcept
     {
-        cutHz = juce::jlimit (20.0f, float (sampleRate * 0.48), cutHz);
+        // Chamberlin SVF requires f < 2 for stability; f approaches 2 as
+        // cutHz approaches Nyquist, and at high resonance (low qr) that
+        // gets numerically unstable enough to blow z1/z2 up to Inf/NaN -
+        // which then poisons the filter's persistent state until the next
+        // trigger() resets it. 0.45 keeps a safe margin (~19.8kHz @ 44.1kHz)
+        // and the isfinite() guard below recovers from any blowup anyway.
+        cutHz = juce::jlimit (20.0f, float (sampleRate * 0.45), cutHz);
         q     = juce::jlimit (0.1f, 20.0f, q);
         const float f  = 2.0f * std::sin (juce::MathConstants<float>::pi
                                            * cutHz / float (sampleRate));
@@ -245,7 +251,8 @@ public:
         float hp = in - z2 - qr * z1;
         float bp = f * hp + z1;
         float lp = f * bp + z2;
-        z1 = bp; z2 = lp;
+        z1 = std::isfinite (bp) ? bp : 0.0f;
+        z2 = std::isfinite (lp) ? lp : 0.0f;
         switch (mode)
         {
             case VoiceParams::FilterMode::LP:    return lp;

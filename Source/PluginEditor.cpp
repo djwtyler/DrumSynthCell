@@ -3,6 +3,14 @@
 static const char* kChanNames[DrumSynth::NumChannels] =
     { "Kick", "Snare", "Clap", "Tom 1", "Tom 2", "Closed Hat", "Open Hat", "Cymbal" };
 
+// Shared text formatter for Hz-range knobs (Pitch, Filter Cutoff, Noise BP
+// Freq and their Basic View macro equivalents) — switches to kHz above 1000Hz
+static juce::String formatHz (double v)
+{
+    return v >= 1000.0 ? juce::String (v / 1000.0, 2) + " kHz"
+                        : juce::String (v, 1) + " Hz";
+}
+
 // Colour palette — one blue family applied across the whole plugin, each
 // other colour derived as a relative shade of kBg so the theme stays
 // cohesive instead of mixing in unrelated hardcoded darks.
@@ -39,8 +47,19 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupCombo (oscModeBox,    { "Single", "Metallic Cluster", "Partial Shaper", "Resonator" });
 
     // Knob ranges
+    // Hz-range knobs switch their text box to kHz above 1000Hz; setValue
+    // toggling forces an immediate text refresh (setValue inside setupKnob
+    // ran before the formatter existed, same workaround as oscShapeKnob below)
+    auto applyHzFormat = [] (juce::Slider& s, double def)
+    {
+        s.textFromValueFunction = formatHz;
+        s.setValue (s.getMaximum(), juce::dontSendNotification);
+        s.setValue (def, juce::dontSendNotification);
+    };
+
     setupKnob (pitchKnob,       20.0, 20000.0, 80.0, " Hz");
     pitchKnob.setSkewFactorFromMidPoint (300.0);   // 300Hz at 12 o'clock, 20-20000 either side
+    applyHzFormat (pitchKnob, 80.0);
     setupKnob (oscShapeKnob,    0.0,  1.0,  0.0);
     oscShapeKnob.textFromValueFunction = [] (double v) -> juce::String {
         if (v < 0.04)               return "Sine";
@@ -61,12 +80,14 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (partDecKnob,     0.0,  1.0,  0.5);
     setupKnob (ringDecayKnob,   0.01, 2.0,  0.3, " s");
     setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
-    setupKnob (noiseDecKnob,    0.1,  2.0,  0.1);
+    setupKnob (noiseDecKnob,    0.001,2.0,  0.1);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
+    applyHzFormat (noiseBPFreqKnob, 8000.0);
     setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7);
     setupKnob (driveAmtKnob,    0.0,  1.0,  0.0);
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
     filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
+    applyHzFormat (filterCutKnob, 12000.0);
     setupKnob (filterResKnob,   0.0,  1.0,  0.5);
     setupVSlider (oscLevelSlider,     0.0, 1.0, 1.0);
     setupVSlider (noiseMixGainSlider, 0.0, 1.0, 1.0);
@@ -74,13 +95,13 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     pcmLevelSlider.setEnabled (false);   // placeholder: PCM layer not implemented yet
     setupKnob (env1AttKnob,     0.001,1.0,  0.005," s");
     setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s");
-    setupKnob (env1DecKnob,     0.1,  2.0,  0.1,  " s");
+    setupKnob (env1DecKnob,     0.001,2.0,  0.05, " s");
     setupKnob (env2AttKnob,     0.001,2.0,  0.005," s");
     setupKnob (env2HoldKnob,    0.0,  2.0,  0.0,  " s");
-    setupKnob (env2DecKnob,     0.1,  4.0,  0.3,  " s");
+    setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s");
     setupKnob (ampAttKnob,      0.001,1.0,  0.002," s");
     setupKnob (ampHoldKnob,     0.0,  1.0,  0.0,  " s");
-    setupKnob (ampDecKnob,      0.1,  4.0,  0.5,  " s");
+    setupKnob (ampDecKnob,      0.001,4.0,  0.5,  " s");
     setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
@@ -96,9 +117,9 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     }
     setupKnob (macroKnobs[0], 20.0,    20000.0, 80.0,  " Hz");  // Tune
     macroKnobs[0].setSkewFactorFromMidPoint (300.0);
-    setupKnob (macroKnobs[1],  0.1,    2.0,     0.1,   " s");   // Env 1 decay
+    setupKnob (macroKnobs[1],  0.001,  2.0,     0.05,  " s");   // Env 1 decay
     setupKnob (macroKnobs[2],  0.001,  1.0,     0.002, " s");   // Attack
-    setupKnob (macroKnobs[3],  0.1,    4.0,     0.5,   " s");   // Decay
+    setupKnob (macroKnobs[3],  0.001,  4.0,     0.5,   " s");   // Decay
     setupKnob (macroKnobs[4],  0.0,    1.0,     0.8);            // Volume
     setupKnob (macroKnobs[5],  0.0,    1.0,     0.0);            // Noise
     setupKnob (macroKnobs[6],  20.0,   20000.0, 12000.0," Hz"); // Flt Cut
