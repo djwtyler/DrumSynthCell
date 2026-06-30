@@ -79,7 +79,18 @@ void DrumVoice::trigger (float vel)
     oscPhase  = 0.0;
     metalPhases .fill (0.0);
     partialPhases.fill (0.0);
-    resY1 = 1.0f; resY2 = 0.0f;   // single impulse excitation for the resonator
+    // Resonator impulse excitation, scaled by sin(theta) to normalize peak
+    // amplitude across frequencies. A 2-pole resonator's impulse response is
+    // h[n] = r^n * sin((n+1)*theta)/sin(theta) - that 1/sin(theta) factor
+    // blows up at low frequencies (at 60Hz/44.1kHz it's ~117x), so seeding
+    // with a raw unit impulse massively overdrives everything downstream.
+    // Seeding with sin(theta) instead cancels that gain, giving a peak of
+    // ~1.0 regardless of pitch.
+    {
+        const float theta0 = juce::MathConstants<float>::twoPi * params.pitchHz / float (sampleRate);
+        resY1 = std::sin (theta0);
+    }
+    resY2 = 0.0f;
     pinkB[0] = pinkB[1] = pinkB[2] = 0.0f;
 
     lfo1.reset();

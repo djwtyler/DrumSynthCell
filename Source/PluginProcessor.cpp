@@ -18,20 +18,20 @@ DrumSynthProcessor::DrumSynthProcessor()
                                                        // equivalent of the 808's bridged-T
                                                        // feedback network biased just below
                                                        // self-oscillation
-        p.ringDecay      = 0.35f;
+        p.ringDecay      = 0.15f;    // shorter, punchier ring - 0.35s was too boomy/sustained
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.04f;
-        p.noiseLevel     = 0.12f;   // subtle click transient at the onset, layered under the ring
-        p.noiseDecay     = 0.03f;
-        p.noiseBPFreq    = 600.0f;
-        p.noiseBPQ       = 0.5f;
+        p.noiseLevel     = 0.25f;    // louder click - needs to read as a distinct transient, not a texture
+        p.noiseDecay     = 0.015f;   // tight, fast click
+        p.noiseBPFreq    = 2200.0f;  // brighter, separated from the ~60Hz body so it reads as "snap" not boom
+        p.noiseBPQ       = 0.6f;
         p.driveAmount    = 0.18f;   // light grit so the ring doesn't sound like a pure test tone
         p.driveType      = VP::DriveType::SoftClip;
         p.filterMode     = VP::FilterMode::LP;
-        p.filterCutoff   = 800.0f;
-        p.filterResonance= 0.3f;
+        p.filterCutoff   = 1500.0f;  // raised from 800Hz so the click's transient brightness isn't rolled off
+        p.filterResonance= 0.15f;    // lower resonance - 0.3 was emphasizing a narrow band, adding to the boom
         p.env2Decay      = 0.06f;
-        p.ampAttack      = 0.002f;
+        p.ampAttack      = 0.001f;   // fastest possible attack for the hardest transient onset
         // Resonator's own ring decay and the Amp envelope's decay multiply
         // together (sig already carries the ring's decay, then gets scaled
         // by amp on top) - two multiplied exponentials compound to a
@@ -42,11 +42,15 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.outputGain     = 0.9f;
     }
     voices[DrumSynth::Kick].syncTransModFromParams();
-    // No Env1->Pitch sweep here: the real bridged-T circuit has no external
-    // pitch modulation (it's just excited below self-oscillation; decay
-    // controls ring length), and sweeping the Resonator's frequency mid-ring
-    // re-tunes its ringing state rather than gliding smoothly like a phase-
-    // accumulating oscillator would - audible as a separate, unwanted blip.
+    // Small Env1->Pitch sweep: a perfectly steady ring reads as a sustained
+    // synth tone, not a drum hit - the fast pitch-fall at onset is a big part
+    // of what makes percussion sound percussive. The previous depth (0.09)
+    // was ~60x too large for this linearly-normalized 20-20000Hz range (it
+    // produced a ~1800Hz swing on a 60Hz tone - nearly 2 octaves - audible as
+    // a separate note). 0.0015 gives ~30Hz of swing (60Hz -> ~90Hz at onset,
+    // falling back over env1Decay) - present but not a distinct pitch.
+    voices[DrumSynth::Kick].transmod.get (ModTarget::PitchHz)
+        .depths[(int) ModSource::Env1] = 0.0015f;
     voices[DrumSynth::Kick].transmod.get (ModTarget::FilterCutoff)
         .depths[(int) ModSource::Env2] = 0.04f;
 
