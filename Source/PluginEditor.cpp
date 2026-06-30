@@ -61,7 +61,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (partDecKnob,     0.0,  1.0,  0.5);
     setupKnob (ringDecayKnob,   0.01, 2.0,  0.3, " s");
     setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
-    setupKnob (noiseDecKnob,    0.001,4.0,  0.1);
+    setupKnob (noiseDecKnob,    0.1,  2.0,  0.1);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
     setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7);
     setupKnob (driveAmtKnob,    0.0,  1.0,  0.0);
@@ -74,13 +74,13 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     pcmLevelSlider.setEnabled (false);   // placeholder: PCM layer not implemented yet
     setupKnob (env1AttKnob,     0.001,1.0,  0.005," s");
     setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s");
-    setupKnob (env1DecKnob,     0.001,2.0,  0.05, " s");
+    setupKnob (env1DecKnob,     0.1,  2.0,  0.1,  " s");
     setupKnob (env2AttKnob,     0.001,2.0,  0.005," s");
     setupKnob (env2HoldKnob,    0.0,  2.0,  0.0,  " s");
-    setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s");
+    setupKnob (env2DecKnob,     0.1,  4.0,  0.3,  " s");
     setupKnob (ampAttKnob,      0.001,1.0,  0.002," s");
     setupKnob (ampHoldKnob,     0.0,  1.0,  0.0,  " s");
-    setupKnob (ampDecKnob,      0.001,4.0,  0.5,  " s");
+    setupKnob (ampDecKnob,      0.1,  4.0,  0.5,  " s");
     setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
@@ -96,9 +96,9 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     }
     setupKnob (macroKnobs[0], 20.0,    20000.0, 80.0,  " Hz");  // Tune
     macroKnobs[0].setSkewFactorFromMidPoint (300.0);
-    setupKnob (macroKnobs[1],  0.001,  2.0,     0.05,  " s");   // Env 1 decay
+    setupKnob (macroKnobs[1],  0.1,    2.0,     0.1,   " s");   // Env 1 decay
     setupKnob (macroKnobs[2],  0.001,  1.0,     0.002, " s");   // Attack
-    setupKnob (macroKnobs[3],  0.001,  4.0,     0.5,   " s");   // Decay
+    setupKnob (macroKnobs[3],  0.1,    4.0,     0.5,   " s");   // Decay
     setupKnob (macroKnobs[4],  0.0,    1.0,     0.8);            // Volume
     setupKnob (macroKnobs[5],  0.0,    1.0,     0.0);            // Noise
     setupKnob (macroKnobs[6],  20.0,   20000.0, 12000.0," Hz"); // Flt Cut
@@ -874,6 +874,11 @@ void DrumSynthEditor::refreshAdvanced()
     lfo2WaveBox     .setSelectedId (int (p.lfo2Wave) + 1, juce::dontSendNotification);
     fx1TypeBox      .setSelectedId (int (p.fx1Type)  + 1, juce::dontSendNotification);
 
+    // Mixer faders aren't TransMod targets, so they're not in modKnobs —
+    // refresh their displayed value directly from params
+    oscLevelSlider    .setValue (p.oscLevel,     juce::dontSendNotification);
+    noiseMixGainSlider.setValue (p.noiseMixGain, juce::dontSendNotification);
+
     // Every continuous knob's value + TransMod arc state comes from modKnobs
     for (auto& entry : modKnobs)
         if (!entry.isMacro)
@@ -971,6 +976,11 @@ void DrumSynthEditor::connectAdvancedControls()
     lfo1WaveBox     .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo1Wave      = VP::LfoWave(lfo1WaveBox.getSelectedId() - 1); };
     lfo2WaveBox     .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.lfo2Wave      = VP::LfoWave(lfo2WaveBox.getSelectedId() - 1); };
     fx1TypeBox      .onChange      = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.fx1Type       = VP::FxDistType(fx1TypeBox.getSelectedId() - 1); };
+
+    // Mixer faders — plain per-channel gain stages, deliberately not
+    // TransMod targets, so they're wired directly rather than via modKnobs
+    oscLevelSlider    .onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.oscLevel     = float (oscLevelSlider.getValue()); };
+    noiseMixGainSlider.onValueChange = [this] { if (!updatingUI) proc.getVoice(selectedChannel).params.noiseMixGain = float (noiseMixGainSlider.getValue()); };
 
     // Master bus — global, not per-channel, so these write straight to the
     // processor rather than going through a voice/TransMod

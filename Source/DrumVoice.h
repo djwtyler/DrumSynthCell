@@ -42,7 +42,7 @@ struct VoiceParams
     // --- Env 1 (general purpose — TransMod source only) ---
     float env1Attack = 0.005f;
     float env1Hold   = 0.0f;
-    float env1Decay  = 0.05f;
+    float env1Decay  = 0.1f;
 
     // --- Noise ---
     float noiseLevel  = 0.0f;

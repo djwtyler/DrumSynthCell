@@ -67,16 +67,16 @@ Kick → Snare → Clap → Tom 1 → Tom 2 → Closed Hat → Open Hat → Cymb
 
 Eight macro knobs below the pads, each controlling the most significant parameter for the selected channel.
 
-| Knob       | Parameter         | Range              |
-|------------|-------------------|--------------------|
-| Tune       | Pitch (Hz)        | 20 – 800 Hz        |
-| Pitch Env  | Pitch env depth   | 0 – 48 semitones   |
-| Attack     | Amp attack        | 0.001 – 1 s        |
-| Decay      | Amp decay         | 0.001 – 8 s        |
-| Volume     | Output gain       | 0 – 1              |
-| Noise      | Noise level       | 0 – 1              |
-| Flt Cut    | Filter cutoff     | 20 – 20 000 Hz     |
-| Resonance  | Filter resonance  | 0 – 1              |
+| Knob       | Parameter         | Range                         |
+|------------|-------------------|--------------------------------|
+| Tune       | Pitch (Hz)        | 20 – 20 000 Hz (300Hz @ 12 o'clock) |
+| Env 1 Dec  | Env 1 decay       | 0.1 – 2 s                      |
+| Attack     | Amp attack        | 0.001 – 1 s                    |
+| Decay      | Amp decay         | 0.1 – 4 s                      |
+| Volume     | Output gain       | 0 – 1                           |
+| Noise      | Noise level       | 0 – 1                           |
+| Flt Cut    | Filter cutoff     | 20 – 20 000 Hz (1000Hz @ 12 o'clock) |
+| Resonance  | Filter resonance  | 0 – 1                           |
 
 ---
 
@@ -123,7 +123,7 @@ An independent noise generator mixed with the oscillator signal.
 | Control   | Description                                              | Range          |
 |-----------|----------------------------------------------------------|----------------|
 | Level     | Noise generator level (TransMod target)                  | 0 – 1          |
-| Decay     | Exponential noise envelope decay time                    | 0.001 – 4 s    |
+| Decay     | Exponential noise envelope decay time                    | 0.1 – 2 s      |
 | BP Freq   | Bandpass centre frequency for noise colouring            | 20 – 18 000 Hz |
 | BP Q      | Bandpass Q (width) — higher values narrow the band       | 0.1 – 20       |
 | Pink      | Switches noise colour from white to pink (–3 dB/octave) |                |
@@ -182,33 +182,29 @@ from any modulatable level control the layer's own section may have.
 
 ### ENVELOPES Section
 
-Three AHD (Attack – Hold – Decay) envelopes per voice.
+Three AHD (Attack – Hold – Decay) envelopes per voice. Env 1 and Env 2 are
+general-purpose — they have no hardwired audio role; each one only affects
+the sound once assigned to a target via TransMod (focus the source, drag a
+knob). Amp is hardwired to the VCA.
 
-#### Pitch Envelope (fast, transient)
+#### Env 1 / Env 2 (general purpose — TransMod sources only)
 
-| Control | Description                   | Range         |
-|---------|-------------------------------|---------------|
-| Depth   | Pitch shift at envelope peak  | 0 – 48 semitones |
-| Decay   | Exponential fall time         | 0.001 – 2 s   |
+| Control | Description            | Range (Env 1) | Range (Env 2) |
+|---------|-------------------------|---------------|---------------|
+| Attack  | Attack time             | 0.001 – 1 s   | 0.001 – 2 s   |
+| Hold    | Hold time at peak       | 0 – 1 s       | 0 – 2 s       |
+| Decay   | Exponential decay time (TransMod target) | 0.1 – 2 s | 0.1 – 4 s |
 
-Attack is fixed at 1 ms. Creates the characteristic pitch drop on kicks and toms.
-
-#### Filter Envelope (slow)
-
-| Control | Description                              | Range       |
-|---------|------------------------------------------|-------------|
-| Attack  | Filter env attack time                   | 0 – 2 s     |
-| Hold    | Filter env hold time at peak             | 0 – 2 s     |
-| Decay   | Filter env decay time                    | 0 – 8 s     |
-| Depth   | Cutoff modulation depth at envelope peak | –96 – +96 semitones |
+Factory presets typically route Env 1 → Pitch (the classic kick/tom/snare
+pitch drop) and Env 2 → Filter Cutoff.
 
 #### Amp Envelope (VCA)
 
-| Control | Description               | Range        |
-|---------|---------------------------|--------------|
-| Attack  | VCA attack time           | 0.001 – 1 s  |
-| Hold    | VCA hold time at peak     | 0 – 2 s      |
-| Decay   | VCA decay time (TransMod target) | 0.001 – 8 s |
+| Control | Description                      | Range       |
+|---------|-----------------------------------|-------------|
+| Attack  | VCA attack time                   | 0.001 – 1 s |
+| Hold    | VCA hold time at peak              | 0 – 1 s     |
+| Decay   | VCA decay time (TransMod target)  | 0.1 – 4 s   |
 
 The voice stays active until the amp envelope reaches silence. The `isActive()` state is driven entirely by this envelope.
 

@@ -56,9 +56,9 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {  0.01f,       2.f },   // RingDecay
     {0.001f,       1.f  },   // Env1Attack
     {    0.f,       1.f },   // Env1Hold
-    {0.001f,       2.f  },   // Env1Decay
+    {  0.1f,       2.f  },   // Env1Decay
     {    0.f,       1.f },   // NoiseLevel
-    {0.001f,       4.f  },   // NoiseDecay
+    {  0.1f,       2.f  },   // NoiseDecay
     {  100.f,   20000.f },   // NoiseBPFreq
     {  0.1f,      10.f  },   // NoiseBPQ
     {    0.f,       1.f },   // DriveAmount
@@ -66,10 +66,10 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {    0.f,       1.f },   // FilterResonance
     {0.001f,       2.f  },   // Env2Attack
     {    0.f,       2.f },   // Env2Hold
-    {0.001f,       4.f  },   // Env2Decay
+    {  0.1f,       4.f  },   // Env2Decay
     {0.001f,       1.f  },   // AmpAttack
     {    0.f,       1.f },   // AmpHold
-    {0.001f,       4.f  },   // AmpDecay
+    {  0.1f,       4.f  },   // AmpDecay
     {   0.1f,      10.f },   // Lfo1Rate
     {   0.1f,      10.f },   // Lfo2Rate
     {    0.f,       1.f },   // Fx1Amount

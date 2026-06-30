@@ -20,15 +20,15 @@ DrumSynthProcessor::DrumSynthProcessor()
                                                        // self-oscillation
         p.ringDecay      = 0.35f;
         p.env1Attack     = 0.001f;
-        p.env1Decay      = 0.04f;
-        p.noiseDecay     = 0.04f;
+        p.env1Decay      = 0.1f;
+        p.noiseDecay     = 0.1f;
         p.noiseBPFreq    = 600.0f;
         p.noiseBPQ       = 0.5f;
         p.driveType      = VP::DriveType::SoftClip;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 800.0f;
         p.filterResonance= 0.3f;
-        p.env2Decay      = 0.06f;
+        p.env2Decay      = 0.1f;
         p.ampAttack      = 0.002f;
         p.ampDecay       = 0.6f;
         p.outputGain     = 0.9f;
@@ -45,7 +45,7 @@ DrumSynthProcessor::DrumSynthProcessor()
         auto& p = voices[DrumSynth::Snare].params;
         p.pitchHz        = 180.0f;
         p.env1Attack     = 0.001f;
-        p.env1Decay      = 0.02f;
+        p.env1Decay      = 0.1f;
         p.noiseDecay     = 0.2f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 3000.0f;
@@ -90,8 +90,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.partialDecay   = 0.4f;
         p.membraneMode   = true;
         p.env1Attack     = 0.001f;
-        p.env1Decay      = 0.03f;
-        p.noiseDecay     = 0.05f;
+        p.env1Decay      = 0.1f;
+        p.noiseDecay     = 0.1f;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 600.0f;
         p.filterResonance= 0.2f;
@@ -113,8 +113,8 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.partialDecay   = 0.4f;
         p.membraneMode   = true;
         p.env1Attack     = 0.001f;
-        p.env1Decay      = 0.03f;
-        p.noiseDecay     = 0.05f;
+        p.env1Decay      = 0.1f;
+        p.noiseDecay     = 0.1f;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 500.0f;
         p.filterResonance= 0.2f;
@@ -131,14 +131,14 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.pitchHz        = 8000.0f;
         p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.4f;
-        p.noiseDecay     = 0.05f;
+        p.noiseDecay     = 0.1f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 10000.0f;
         p.noiseBPQ       = 1.0f;
         p.filterMode     = VP::FilterMode::HP;
         p.filterCutoff   = 6000.0f;
         p.filterResonance= 0.1f;
-        p.ampDecay       = 0.08f;
+        p.ampDecay       = 0.1f;
         p.chokeGroup     = DrumSynth::ChokeGroup::A;
         p.outputGain     = 0.7f;
     }
