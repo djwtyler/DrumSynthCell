@@ -50,6 +50,7 @@ static constexpr ModBinding kModBindings[] = {
     { ModTarget::Fx1Amount,       &VoiceParams::fx1Amount       },
     { ModTarget::BitDepth,        &VoiceParams::bitDepth        },
     { ModTarget::OutputGain,      &VoiceParams::outputGain      },
+    { ModTarget::OscLevel,        &VoiceParams::oscLevel        },
 };
 
 // ---------------------------------------------------------------------------

@@ -59,7 +59,6 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
     setupKnob (partRollKnob,    0.0,  1.0,  0.5);
     setupKnob (partDecKnob,     0.0,  1.0,  0.5);
-    setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
     setupKnob (noiseDecKnob,    0.001,4.0,  0.1);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
     setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7);
@@ -67,6 +66,10 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
     filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
     setupKnob (filterResKnob,   0.0,  1.0,  0.5);
+    setupVSlider (oscLevelSlider,   0.0, 1.0, 1.0);
+    setupVSlider (noiseLevelSlider, 0.0, 1.0, 0.0);
+    setupVSlider (pcmLevelSlider,   0.0, 1.0, 0.0);
+    pcmLevelSlider.setEnabled (false);   // placeholder: PCM layer not implemented yet
     setupKnob (env1AttKnob,     0.001,1.0,  0.005," s");
     setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s");
     setupKnob (env1DecKnob,     0.001,2.0,  0.05, " s");
@@ -126,6 +129,18 @@ void DrumSynthEditor::setupKnob (juce::Slider& s, double lo, double hi, double d
     s.setColour (juce::Slider::textBoxTextColourId,         kDim);
     s.setColour (juce::Slider::textBoxBackgroundColourId,   kBg);
     s.setColour (juce::Slider::textBoxOutlineColourId,      juce::Colours::transparentBlack);
+}
+
+void DrumSynthEditor::setupVSlider (juce::Slider& s, double lo, double hi, double def)
+{
+    s.setSliderStyle (juce::Slider::LinearVertical);
+    s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 20);
+    s.setNumDecimalPlacesToDisplay (2);
+    s.setRange (lo, hi);
+    s.setValue (def, juce::dontSendNotification);
+    s.setColour (juce::Slider::textBoxTextColourId,       kDim);
+    s.setColour (juce::Slider::textBoxBackgroundColourId, kBg);
+    s.setColour (juce::Slider::textBoxOutlineColourId,    juce::Colours::transparentBlack);
 }
 
 void DrumSynthEditor::setupCombo (juce::ComboBox& b, const juce::StringArray& items)
@@ -203,7 +218,6 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (membraneBtn);
 
     // NOISE
-    addChildComponent (noiseLevelKnob);
     addChildComponent (noiseDecKnob);
     addChildComponent (noiseBPFreqKnob);
     addChildComponent (noiseBPQKnob);
@@ -219,6 +233,12 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (filter4PoleBtn);
     addChildComponent (filterCutKnob);
     addChildComponent (filterResKnob);
+
+    // MIXER (below Filter)
+    addChildComponent (mixerHdr);
+    addChildComponent (oscLevelSlider);
+    addChildComponent (noiseLevelSlider);
+    addChildComponent (pcmLevelSlider);
 
     // ENVELOPES
     addChildComponent (env1AttKnob);
@@ -255,9 +275,9 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (playLoopBtn);
 
     // Per-knob labels for advanced view
-    static const char* kAdvLblText[27] = {
+    static const char* kAdvLblText[29] = {
         "Pitch", "Shape", "Peak", "Space", "Roll", "Decay", // OSC 0-5
-        "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
+        "Noise", "Decay", "BP Freq", "BP Q",                // 6=MIXER, NOISE 7-9
         "Amount",                                            // DRIVE 10
         "Cutoff", "Res",                                     // FILTER 11-12
         "Attack", "Hold", "Decay",                          // ENV 1 13-15
@@ -265,9 +285,10 @@ void DrumSynthEditor::buildAdvancedView()
         "Attack", "Hold", "Decay",                          // AMP 19-21
         "Rate", "Rate",                                      // LFO1/2 22-23
         "Amount", "Bit Dep",                                 // FX 24-25
-        "Vol"                                                // MASTER 26
+        "Vol",                                                // MASTER 26
+        "Osc", "PCM"                                          // MIXER 27-28
     };
-    for (int i = 0; i < 27; ++i)
+    for (int i = 0; i < 29; ++i)
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
@@ -298,6 +319,7 @@ void DrumSynthEditor::buildAdvancedView()
     styleHdr (lfo1Hdr, DrumSynthLookAndFeel::sourceColour (0));
     styleHdr (lfo2Hdr, DrumSynthLookAndFeel::sourceColour (1));
     styleHdr (masterHdr, kTextDark);
+    styleHdr (mixerHdr,  kTextDark);
     limiterBtn.setColour (juce::ToggleButton::textColourId,         kTextDark);
     limiterBtn.setColour (juce::ToggleButton::tickColourId,         juce::Colours::white);
     limiterBtn.setColour (juce::ToggleButton::tickDisabledColourId, kDim);
@@ -347,7 +369,7 @@ void DrumSynthEditor::buildAdvancedView()
         { &env1AttKnob,     ModTarget::Env1Attack },
         { &env1HoldKnob,    ModTarget::Env1Hold },
         { &env1DecKnob,     ModTarget::Env1Decay },
-        { &noiseLevelKnob,  ModTarget::NoiseLevel },
+        { &noiseLevelSlider,  ModTarget::NoiseLevel },
         { &noiseDecKnob,    ModTarget::NoiseDecay },
         { &noiseBPFreqKnob, ModTarget::NoiseBPFreq },
         { &noiseBPQKnob,    ModTarget::NoiseBPQ },
@@ -364,6 +386,7 @@ void DrumSynthEditor::buildAdvancedView()
         { &lfo2RateKnob,    ModTarget::Lfo2Rate },
         { &fx1AmtKnob,      ModTarget::Fx1Amount },
         { &bitDepthKnob,    ModTarget::BitDepth },
+        { &oscLevelSlider,  ModTarget::OscLevel },
         { &macroKnobs[0],   ModTarget::PitchHz,         true },
         { &macroKnobs[1],   ModTarget::Env1Decay,       true },
         { &macroKnobs[2],   ModTarget::AmpAttack,       true },
@@ -410,9 +433,10 @@ void DrumSynthEditor::showBasicView()
     for (auto* c : std::initializer_list<juce::Component*> {
                      &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
-                     &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
+                     &noiseLevelSlider, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
+                     &mixerHdr, &oscLevelSlider, &noiseLevelSlider, &pcmLevelSlider,
                      &env1AttKnob, &env1HoldKnob, &env1DecKnob,
                      &env2AttKnob, &env2HoldKnob, &env2DecKnob,
                      &env1Hdr, &env2Hdr, &ampHdr, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
@@ -448,9 +472,10 @@ void DrumSynthEditor::showAdvancedView()
     for (auto* c : std::initializer_list<juce::Component*> {
                      &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
-                     &noiseLevelKnob, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
+                     &noiseLevelSlider, &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob,
+                     &mixerHdr, &oscLevelSlider, &noiseLevelSlider, &pcmLevelSlider,
                      &env1AttKnob, &env1HoldKnob, &env1DecKnob,
                      &env2AttKnob, &env2HoldKnob, &env2DecKnob,
                      &env1Hdr, &env2Hdr, &ampHdr, &ampAttKnob, &ampHoldKnob, &ampDecKnob,
@@ -579,9 +604,8 @@ void DrumSynthEditor::layoutAdvancedView()
         const int x = kNsX + 8;
         int y = panelY + 54;
 
-        lbl (6, x,       y + 22);  lbl (7, x + C + G, y + 22);
-        noiseLevelKnob  .setBounds (x,       y + 22, C, C);
-        noiseDecKnob    .setBounds (x + C + G, y + 22, C, C);
+        lbl (7, x, y + 22);
+        noiseDecKnob    .setBounds (x, y + 22, C, C);
         y += 22 + C + 8;
         noisePinkBtn    .setBounds (x, y, kNsW - 14, 22);
         y += 30;
@@ -614,6 +638,21 @@ void DrumSynthEditor::layoutAdvancedView()
         lbl (11, x,       y + 22);  lbl (12, x + C + G, y + 22);
         filterCutKnob .setBounds (x,       y + 22, C, C);
         filterResKnob .setBounds (x + C + G, y + 22, C, C);
+        y += 22 + C + 24;
+
+        // ===== MIXER (below Filter, same column; vertical faders) =====
+        mixerHdr.setBounds (x, y, kFltW - 16, 20);
+        y += 24;
+        {
+            const int sliderW = 50, sliderGap = 15, sliderH = 200;
+            advLbl[27].setBounds (x,                       y, sliderW, 16);   // Osc
+            advLbl[6] .setBounds (x + sliderW + sliderGap, y, sliderW, 16);   // Noise
+            advLbl[28].setBounds (x + 2 * (sliderW + sliderGap), y, sliderW, 16); // PCM
+            y += 20;
+            oscLevelSlider  .setBounds (x,                       y, sliderW, sliderH);
+            noiseLevelSlider.setBounds (x + sliderW + sliderGap, y, sliderW, sliderH);
+            pcmLevelSlider  .setBounds (x + 2 * (sliderW + sliderGap), y, sliderW, sliderH);
+        }
     }
 
     // ===== ENVELOPES (Env1/Env2 general purpose, Amp hardwired) =====

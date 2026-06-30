@@ -273,6 +273,35 @@ public:
             g.fillEllipse (cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
         }
     }
+
+    // Vertical fader for the Mixer section. sliderPos is the absolute Y
+    // pixel of the current value (track top = max, track bottom = min) —
+    // JUCE's own convention for vertical linear sliders.
+    void drawLinearSlider (juce::Graphics& g, int x, int y, int width, int height,
+                           float sliderPos, float /*minSliderPos*/, float /*maxSliderPos*/,
+                           const juce::Slider::SliderStyle /*style*/, juce::Slider& slider) override
+    {
+        const bool enabled = slider.isEnabled();
+        const float trackW = juce::jmin (float (width) * 0.5f, 16.0f);
+        juce::Rectangle<float> track (float (x) + (float (width) - trackW) * 0.5f,
+                                       float (y), trackW, float (height));
+
+        g.setColour (juce::Colour (0xff0e0e1c));
+        g.fillRoundedRectangle (track, trackW * 0.5f);
+        g.setColour (juce::Colour (0xff252540));
+        g.drawRoundedRectangle (track, trackW * 0.5f, 1.0f);
+
+        if (enabled)
+        {
+            auto fill = track.withTop (juce::jlimit (track.getY(), track.getBottom(), sliderPos));
+            g.setColour (juce::Colour (0xff4f8ef7));
+            g.fillRoundedRectangle (fill, trackW * 0.5f);
+        }
+
+        const float capY = juce::jlimit (track.getY(), track.getBottom(), sliderPos);
+        g.setColour (enabled ? juce::Colours::white : juce::Colour (0xff5a6478));
+        g.fillRoundedRectangle (track.getX() - 3.0f, capY - 3.0f, track.getWidth() + 6.0f, 6.0f, 3.0f);
+    }
 };
 
 class DrumSynthEditor : public juce::AudioProcessorEditor,
@@ -331,8 +360,7 @@ private:
     juce::ToggleButton membraneBtn  { "Membrane" };      // Partial Shaper only
 
     // == NOISE section ==
-    juce::Slider       noiseLevelKnob, noiseDecKnob,
-                       noiseBPFreqKnob, noiseBPQKnob;
+    juce::Slider       noiseDecKnob, noiseBPFreqKnob, noiseBPQKnob;
     juce::ToggleButton noisePinkBtn { "Pink" };
 
     // == DRIVE section ==
@@ -343,6 +371,12 @@ private:
     juce::ComboBox     filterModeBox, filterModelBox;
     juce::ToggleButton filter4PoleBtn { "4-pole" };
     juce::Slider       filterCutKnob, filterResKnob;
+
+    // == MIXER section (below Filter; vertical faders) ==
+    // PCM level is a placeholder for the PRD's planned Vintage PCM Layer —
+    // disabled until that synthesis layer exists.
+    juce::Label        mixerHdr { {}, "MIXER" };
+    juce::Slider       oscLevelSlider, noiseLevelSlider, pcmLevelSlider;
 
     // == ENVELOPES section (Env1/Env2 general purpose, Amp hardwired) ==
     juce::Slider       env1AttKnob, env1HoldKnob, env1DecKnob;
@@ -374,9 +408,9 @@ private:
     juce::uint32       lastPlayLoopMs = 0;
 
     // Per-knob name labels for advanced view, ordered by panel
-    // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
-    // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26
-    juce::Label advLbl[27];
+    // OSC:0-5  NOISE:7-9 (6 was Noise Level, moved to MIXER)  DRIVE:10  FILTER:11-12
+    // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26  MIXER:6,27,28 (Noise/Osc/PCM)
+    juce::Label advLbl[29];
 
     // ---------------------------------------------------------------
     // Layout constants
@@ -466,6 +500,7 @@ private:
 
     void setupKnob (juce::Slider& s, double lo, double hi, double def,
                     const juce::String& suffix = {});
+    void setupVSlider (juce::Slider& s, double lo, double hi, double def);
     void setupCombo (juce::ComboBox& b, const juce::StringArray& items);
 
     static constexpr int kBasicW()

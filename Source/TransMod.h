@@ -38,6 +38,7 @@ enum class ModTarget : int {
     Fx1Amount,
     BitDepth,
     OutputGain,
+    OscLevel,
     NumTargets
 };
 static constexpr int kNumModTargets = static_cast<int>(ModTarget::NumTargets);
@@ -73,6 +74,7 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {    0.f,       1.f },   // Fx1Amount
     {    1.f,      24.f },   // BitDepth
     {    0.f,       1.f },   // OutputGain
+    {    0.f,       1.f },   // OscLevel
 };
 
 inline float modNorm(ModTarget t, float v) noexcept
