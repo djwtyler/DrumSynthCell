@@ -79,18 +79,20 @@ void DrumVoice::trigger (float vel)
     oscPhase  = 0.0;
     metalPhases .fill (0.0);
     partialPhases.fill (0.0);
-    // Resonator impulse excitation, scaled by sin(theta) to normalize peak
-    // amplitude across frequencies. A 2-pole resonator's impulse response is
-    // h[n] = r^n * sin((n+1)*theta)/sin(theta) - that 1/sin(theta) factor
-    // blows up at low frequencies (at 60Hz/44.1kHz it's ~117x), so seeding
-    // with a raw unit impulse massively overdrives everything downstream.
-    // Seeding with sin(theta) instead cancels that gain, giving a peak of
-    // ~1.0 regardless of pitch.
+    // Resonator excitation - models the TR-808 bass drum circuit's documented
+    // behaviour (service notes): immediately after trigger, the bridged-T
+    // network's time constant is halved and it rings at TWICE its inherent
+    // frequency for exactly one quarter of the normal period (= half a cycle
+    // at the doubled frequency), then a retriggering pulse drops it straight
+    // to the inherent frequency to decay normally from there. Not a smooth
+    // pitch glide - a discrete frequency step, which is what gives the
+    // percussive "crack" a continuous sweep can't reproduce.
     {
-        const float theta0 = juce::MathConstants<float>::twoPi * params.pitchHz / float (sampleRate);
-        resY1 = std::sin (theta0);
+        const float theta0 = juce::MathConstants<float>::twoPi * params.pitchHz * 2.0f / float (sampleRate);
+        resY1 = std::sin (theta0);   // seeded at sin(theta) to normalize peak amplitude - see computeResonatorSample
     }
     resY2 = 0.0f;
+    resHighPhaseSamplesLeft = int (sampleRate / (4.0 * juce::jmax (1.0f, params.pitchHz)));
     pinkB[0] = pinkB[1] = pinkB[2] = 0.0f;
 
     lfo1.reset();
@@ -224,18 +226,39 @@ float DrumVoice::computePartialSample() noexcept
 
 float DrumVoice::computeResonatorSample() noexcept
 {
-    // Digital resonator: a 2-pole filter excited by a single impulse at
-    // trigger() (resY1/resY2 seeded there), then left to ring freely on
-    // its own poles - the DSP equivalent of an analog bridged-T feedback
-    // network biased just below self-oscillation (TR-808 kick/tom tone
-    // circuit). Pole radius r stays < 1 for stability; the closer to 1,
-    // the longer (and closer to self-oscillating) the ring.
-    const float theta = juce::MathConstants<float>::twoPi * params.pitchHz / float (sampleRate);
-    const float r     = std::exp (-1.0f / (float (sampleRate) * juce::jmax (0.01f, params.ringDecay)));
+    // Digital resonator: a 2-pole filter excited by an impulse, then left to
+    // ring freely on its own poles - the DSP equivalent of an analog
+    // bridged-T feedback network biased just below self-oscillation (TR-808
+    // bass drum tone circuit). Pole radius r stays < 1 for stability; the
+    // closer to 1, the longer (and closer to self-oscillating) the ring.
+    //
+    // Per the TR-808 service notes, the real circuit isn't a single steady
+    // ring: immediately after trigger, the network's time constant is
+    // halved and it rings at TWICE its inherent frequency for exactly one
+    // quarter of the normal period (resHighPhaseSamplesLeft, set in
+    // trigger()) - then a retriggering pulse drops it straight to the
+    // inherent frequency to decay normally. That's a discrete frequency
+    // step + re-excitation, not a smooth glide, and is what gives the
+    // percussive "crack" that a continuous pitch envelope can't reproduce.
+    const bool  highPhase  = resHighPhaseSamplesLeft > 0;
+    const float freqMult   = highPhase ? 2.0f : 1.0f;
+    const float decayUsed  = highPhase ? params.ringDecay * 0.5f : params.ringDecay;
+
+    const float theta = juce::MathConstants<float>::twoPi * params.pitchHz * freqMult / float (sampleRate);
+    const float r     = std::exp (-1.0f / (float (sampleRate) * juce::jmax (0.01f, decayUsed)));
 
     const float y0 = 2.0f * r * std::cos (theta) * resY1 - r * r * resY2;
     resY2 = resY1;
     resY1 = y0;
+
+    if (highPhase && --resHighPhaseSamplesLeft == 0)
+    {
+        // Retrigger at the inherent frequency, seeded fresh rather than
+        // continuing the doubled-frequency ring's decayed state.
+        const float thetaNormal = juce::MathConstants<float>::twoPi * params.pitchHz / float (sampleRate);
+        resY1 = std::sin (thetaNormal);
+        resY2 = 0.0f;
+    }
 
     // A single-pole exponential's *time constant* (set by ringDecay) is not
     // its audible duration - reaching -60dB takes ~6.9 time constants, so an

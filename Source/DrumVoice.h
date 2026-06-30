@@ -306,6 +306,7 @@ private:
     std::array<double, 6> metalPhases  {};   // metallic cluster (808 hats)
     std::array<double, 8> partialPhases {};  // harmonic partial shaper
     float resY1 = 0.0f, resY2 = 0.0f;        // resonator ring state
+    int   resHighPhaseSamplesLeft = 0;       // >0 while still in the post-trigger 2x-frequency phase
 
     // Partial shaper spectral state
     std::array<float, 8> partialWeights      {};  // evolve over time via differential decay

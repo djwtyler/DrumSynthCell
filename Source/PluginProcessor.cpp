@@ -41,15 +41,11 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.outputGain     = 0.9f;
     }
     voices[DrumSynth::Kick].syncTransModFromParams();
-    // Small Env1->Pitch sweep: a perfectly steady ring reads as a sustained
-    // synth tone, not a drum hit - the fast pitch-fall at onset is a big part
-    // of what makes percussion sound percussive. The previous depth (0.09)
-    // was ~60x too large for this linearly-normalized 20-20000Hz range (it
-    // produced a ~1800Hz swing on a 60Hz tone - nearly 2 octaves - audible as
-    // a separate note). 0.0015 gives ~30Hz of swing (60Hz -> ~90Hz at onset,
-    // falling back over env1Decay) - present but not a distinct pitch.
-    voices[DrumSynth::Kick].transmod.get (ModTarget::PitchHz)
-        .depths[(int) ModSource::Env1] = 0.0015f;
+    // No Env1->Pitch sweep: the Resonator now has the TR-808's documented
+    // onset behaviour built in natively (computeResonatorSample() rings at
+    // 2x frequency for a quarter-period then retriggers to the fundamental -
+    // see service notes), which replaces what the ad-hoc smooth sweep was
+    // approximating. Layering an external sweep on top would just fight it.
     voices[DrumSynth::Kick].transmod.get (ModTarget::FilterCutoff)
         .depths[(int) ModSource::Env2] = 0.04f;
 
