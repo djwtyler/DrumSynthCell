@@ -72,7 +72,7 @@ Eight macro knobs below the pads, each controlling the most significant paramete
 | Tune       | Pitch (Hz)        | 20 – 20 000 Hz (300Hz @ 12 o'clock) |
 | Env 1 Dec  | Env 1 decay       | 0.001 – 2 s                    |
 | Attack     | Amp attack        | 0.001 – 1 s                    |
-| Decay      | Amp decay         | 0.001 – 4 s                    |
+| Decay      | Amp decay         | 0.001 – 2 s                    |
 | Volume     | Output gain       | 0 – 1                           |
 | Noise      | Noise level       | 0 – 1                           |
 | Flt Cut    | Filter cutoff     | 20 – 20 000 Hz (1000Hz @ 12 o'clock) |
@@ -116,7 +116,7 @@ selected mode are shown.
 
   Per the TR-808 service notes (confirmed against the original circuit description, not just inferred): immediately after trigger, the network's time constant is halved and it rings at **twice** its inherent frequency for exactly one quarter of the normal period, then a retriggering pulse drops it straight to the inherent frequency to decay normally from there. This is implemented natively in `computeResonatorSample()` as a discrete frequency step + re-excitation — not a smooth pitch glide. The same general principle (start high, settle to the fundamental as resonance damps) is documented for the toms too, via a different circuit (diode-based time-constant reduction that fades as the diodes' internal resistance increases). Deliberately **not** paired with an external Env1→Pitch sweep on top — that would just fight the resonator's own built-in onset behaviour. Pitch should stay fixed for this mode.
 
-  **Important — decays multiply, don't just pick the larger one**: the Resonator's own ring decay and the Amp envelope's decay both apply to the same signal (`sig * amp`), so they compound — the audible decay time is `1 / (1/Ring + 1/AmpDecay)`, always *shorter* than either alone. With Ring=0.35s and AmpDecay=0.6s the kick actually only rings for ~0.22s, not 0.35s. To let Ring be the dominant, audible control, set AmpDecay near its max (e.g. 3-4s) so it gets out of the way; use Ring to set the actual perceived length.
+  **Important — decays multiply, don't just pick the larger one**: the Resonator's own ring decay and the Amp envelope's decay both apply to the same signal (`sig * amp`), so they compound — the audible decay time is `1 / (1/Ring + 1/AmpDecay)`, always *shorter* than either alone. With Ring=0.35s and AmpDecay=0.6s the kick actually only rings for ~0.22s, not 0.35s. To let Ring be the dominant, audible control, set AmpDecay near its max (e.g. 1.5-2s) so it gets out of the way; use Ring to set the actual perceived length.
 
   A pure ring alone tends to sound like a clean test tone rather than a drum. The Kick preset layers in a small noise click (Level ~0.12, Decay ~0.03s, bandpassed around 600Hz) for the attack transient, and light Drive (~0.18, soft clip) for harmonic grit — both are part of what makes it read as a "kick" rather than a sine ping.
 
@@ -217,7 +217,7 @@ pitch drop) and Env 2 → Filter Cutoff.
 |---------|-----------------------------------|-------------|
 | Attack  | VCA attack time                   | 0.001 – 1 s |
 | Hold    | VCA hold time at peak              | 0 – 1 s     |
-| Decay   | VCA decay time (TransMod target)  | 0.001 – 4 s |
+| Decay   | VCA decay time (TransMod target)  | 0.001 – 2 s |
 
 The voice stays active until the amp envelope reaches silence. The `isActive()` state is driven entirely by this envelope.
 
@@ -285,7 +285,7 @@ Five parameters can be modulated:
 |-------------------|---------------------|
 | Filter Cutoff     | 20 – 20 000 Hz      |
 | Filter Resonance  | 0 – 1               |
-| Amp Decay         | 0.001 – 8 s         |
+| Amp Decay         | 0.001 – 2 s         |
 | Noise Level       | 0 – 1               |
 | Drive Amount      | 0 – 1               |
 

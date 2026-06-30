@@ -102,7 +102,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s", 2);
     setupKnob (ampAttKnob,      0.001,1.0,  0.002," s", 2);
     setupKnob (ampHoldKnob,     0.0,  1.0,  0.0,  " s", 2);
-    setupKnob (ampDecKnob,      0.001,4.0,  0.5,  " s", 2);
+    setupKnob (ampDecKnob,      0.001,2.0,  0.5,  " s", 2);
     setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz",  2);
     setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz",  2);
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5,  {}, 2);
@@ -120,7 +120,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     macroKnobs[0].setSkewFactorFromMidPoint (300.0);
     setupKnob (macroKnobs[1],  0.001,  2.0,     0.05,  " s");   // Env 1 decay
     setupKnob (macroKnobs[2],  0.001,  1.0,     0.002, " s");   // Attack
-    setupKnob (macroKnobs[3],  0.001,  4.0,     0.5,   " s");   // Decay
+    setupKnob (macroKnobs[3],  0.001,  2.0,     0.5,   " s");   // Decay
     setupKnob (macroKnobs[4],  0.0,    1.0,     0.8);            // Volume
     setupKnob (macroKnobs[5],  0.0,    1.0,     0.0);            // Noise
     setupKnob (macroKnobs[6],  20.0,   20000.0, 12000.0," Hz"); // Flt Cut

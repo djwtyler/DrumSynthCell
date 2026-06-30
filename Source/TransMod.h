@@ -69,7 +69,7 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {0.001f,       4.f  },   // Env2Decay
     {0.001f,       1.f  },   // AmpAttack
     {    0.f,       1.f },   // AmpHold
-    {0.001f,       4.f  },   // AmpDecay
+    {0.001f,       2.f  },   // AmpDecay
     {   0.1f,      10.f },   // Lfo1Rate
     {   0.1f,      10.f },   // Lfo2Rate
     {    0.f,       1.f },   // Fx1Amount
