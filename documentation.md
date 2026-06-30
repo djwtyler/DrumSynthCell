@@ -293,6 +293,8 @@ Five parameters can be modulated:
 2. **Click a source button** (LFO 1, LFO 2, or Vel) in the TransMod row. The button highlights in its source colour. The UI is now in *focus mode* for that source.
 3. **Turn any target knob** in the advanced panel. In focus mode, turning a knob adjusts the modulation *depth* for that source, not the base parameter value.
 4. **Click the source button again** (or click a different source) to leave focus mode. Knobs return to editing base values.
+5. **Double-click a knob** while a source is focused to clear that source's depth on it.
+6. **Right-click (or Ctrl-click) any knob** at any time — focused or not — to open a menu listing every source currently modulating it (colour-coded to match its ring), each with a "clear" action, plus a "Clear all modulation" option. Shows "No modulation assigned" if none.
 
 ### Visual Feedback
 

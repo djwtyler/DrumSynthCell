@@ -968,6 +968,66 @@ void DrumSynthEditor::mouseDoubleClick (const juce::MouseEvent& e)
     }
 }
 
+void DrumSynthEditor::mouseDown (const juce::MouseEvent& e)
+{
+    if (!e.mods.isPopupMenu()) return;   // right-click (or ctrl-click) only
+
+    for (auto& entry : modKnobs)
+    {
+        if (entry.slider == e.eventComponent)
+        {
+            showModMenu (entry);
+            return;
+        }
+    }
+}
+
+void DrumSynthEditor::showModMenu (const ModKnobEntry& entry)
+{
+    static const char* kSrcNames[kNumModSources] = { "LFO 1", "LFO 2", "Env 1", "Env 2", "Vel" };
+
+    auto&      voice  = proc.getVoice (selectedChannel);
+    const auto target = entry.target;
+    auto&      tm     = voice.transmod.get (target);
+
+    juce::PopupMenu menu;
+    bool anyActive = false;
+
+    for (int i = 0; i < kNumModSources; ++i)
+    {
+        if (std::abs (tm.depths[i]) < 0.0005f) continue;
+        anyActive = true;
+
+        juce::PopupMenu::Item item;
+        item.text   = juce::String (kSrcNames[i]) + ": "
+                      + juce::String (tm.depths[i] * 100.0f, 0) + "%  (click to clear)";
+        item.colour = DrumSynthLookAndFeel::sourceColour (i);
+        item.action = [this, target, i, slider = entry.slider]
+        {
+            proc.getVoice (selectedChannel).transmod.get (target).depths[i] = 0.0f;
+            setTransModKnobProps (*slider, target);
+        };
+        menu.addItem (item);
+    }
+
+    if (!anyActive)
+    {
+        menu.addItem ("No modulation assigned", false, false, nullptr);
+    }
+    else
+    {
+        menu.addSeparator();
+        menu.addItem ("Clear all modulation", [this, target, slider = entry.slider]
+        {
+            auto& t = proc.getVoice (selectedChannel).transmod.get (target);
+            for (int i = 0; i < kNumModSources; ++i) t.depths[i] = 0.0f;
+            setTransModKnobProps (*slider, target);
+        });
+    }
+
+    menu.showMenuAsync (juce::PopupMenu::Options());
+}
+
 // connectMacros() no longer needed — macro knobs are wired generically via
 // modKnobs/connectModKnob in buildAdvancedView()
 

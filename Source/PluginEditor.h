@@ -504,6 +504,8 @@ private:
     std::vector<ModKnobEntry> modKnobs;
     void connectModKnob (juce::Slider& s, ModTarget t);
     void mouseDoubleClick (const juce::MouseEvent&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void showModMenu (const ModKnobEntry&);
 
     // Drives the live modulation-ring animation (refreshes tmLive* / tmDepth*
     // properties on every modulatable knob so the outer ring tracks the
