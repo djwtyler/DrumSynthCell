@@ -57,7 +57,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
         s.setValue (def, juce::dontSendNotification);
     };
 
-    setupKnob (pitchKnob,       20.0, 20000.0, 80.0, " Hz");
+    setupKnob (pitchKnob,       20.0, 20000.0, 80.0);
     pitchKnob.setSkewFactorFromMidPoint (300.0);   // 300Hz at 12 o'clock, 20-20000 either side
     applyHzFormat (pitchKnob, 80.0);
     setupKnob (oscShapeKnob,    0.0,  1.0,  0.0);
@@ -82,11 +82,11 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     ringDecayKnob.setSkewFactorFromMidPoint (0.3);   // most 808-ish rings live in 0.1-0.5s
     setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0,  {}, 2);
     setupKnob (noiseDecKnob,    0.001,2.0,  0.1, " s", 2);
-    setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
+    setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0);
     applyHzFormat (noiseBPFreqKnob, 8000.0);
     setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7,  {}, 2);
     setupKnob (driveAmtKnob,    0.0,  1.0,  0.0,  {}, 2);
-    setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
+    setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0);
     filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
     applyHzFormat (filterCutKnob, 12000.0);
     setupKnob (filterResKnob,   0.0,  1.0,  0.5,  {}, 2);
