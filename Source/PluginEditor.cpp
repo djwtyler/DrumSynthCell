@@ -75,39 +75,39 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     oscShapeKnob.setValue (1.0, juce::dontSendNotification);
     oscShapeKnob.setValue (0.0, juce::dontSendNotification);
     setupKnob (partPeakKnob,    1.0,  8.0,  1.0);
-    setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
-    setupKnob (partRollKnob,    0.0,  1.0,  0.5);
-    setupKnob (partDecKnob,     0.0,  1.0,  0.5);
-    setupKnob (ringDecayKnob,   0.01, 2.0,  0.3, " s");
+    setupKnob (partSpaceKnob,   0.0,  1.0,  0.5,  {}, 2);
+    setupKnob (partRollKnob,    0.0,  1.0,  0.5,  {}, 2);
+    setupKnob (partDecKnob,     0.0,  1.0,  0.5,  {}, 2);
+    setupKnob (ringDecayKnob,   0.01, 2.0,  0.3, " s", 2);
     ringDecayKnob.setSkewFactorFromMidPoint (0.3);   // most 808-ish rings live in 0.1-0.5s
-    setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
-    setupKnob (noiseDecKnob,    0.001,2.0,  0.1);
+    setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0,  {}, 2);
+    setupKnob (noiseDecKnob,    0.001,2.0,  0.1, " s", 2);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
     applyHzFormat (noiseBPFreqKnob, 8000.0);
-    setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7);
-    setupKnob (driveAmtKnob,    0.0,  1.0,  0.0);
+    setupKnob (noiseBPQKnob,    0.1,  10.0, 0.7,  {}, 2);
+    setupKnob (driveAmtKnob,    0.0,  1.0,  0.0,  {}, 2);
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
     filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
     applyHzFormat (filterCutKnob, 12000.0);
-    setupKnob (filterResKnob,   0.0,  1.0,  0.5);
+    setupKnob (filterResKnob,   0.0,  1.0,  0.5,  {}, 2);
     setupVSlider (oscLevelSlider,     0.0, 1.0, 1.0);
     setupVSlider (noiseMixGainSlider, 0.0, 1.0, 1.0);
     setupVSlider (pcmLevelSlider,     0.0, 1.0, 0.0);
     pcmLevelSlider.setEnabled (false);   // placeholder: PCM layer not implemented yet
-    setupKnob (env1AttKnob,     0.001,1.0,  0.005," s");
-    setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s");
-    setupKnob (env1DecKnob,     0.001,2.0,  0.05, " s");
-    setupKnob (env2AttKnob,     0.001,2.0,  0.005," s");
-    setupKnob (env2HoldKnob,    0.0,  2.0,  0.0,  " s");
-    setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s");
-    setupKnob (ampAttKnob,      0.001,1.0,  0.002," s");
-    setupKnob (ampHoldKnob,     0.0,  1.0,  0.0,  " s");
-    setupKnob (ampDecKnob,      0.001,4.0,  0.5,  " s");
-    setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz");
-    setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz");
-    setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
+    setupKnob (env1AttKnob,     0.001,1.0,  0.005," s", 2);
+    setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s", 2);
+    setupKnob (env1DecKnob,     0.001,2.0,  0.05, " s", 2);
+    setupKnob (env2AttKnob,     0.001,2.0,  0.005," s", 2);
+    setupKnob (env2HoldKnob,    0.0,  2.0,  0.0,  " s", 2);
+    setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s", 2);
+    setupKnob (ampAttKnob,      0.001,1.0,  0.002," s", 2);
+    setupKnob (ampHoldKnob,     0.0,  1.0,  0.0,  " s", 2);
+    setupKnob (ampDecKnob,      0.001,4.0,  0.5,  " s", 2);
+    setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz",  2);
+    setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz",  2);
+    setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5,  {}, 2);
     setupKnob (bitDepthKnob,    1.0,  24.0, 8.0,  " bit");
-    setupKnob (masterVolKnob,   0.0,  1.5,  1.0);
+    setupKnob (masterVolKnob,   0.0,  1.5,  1.0, {}, 2);
 
     for (auto& k : macroKnobs)
     {
@@ -140,11 +140,11 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
 // Setup helpers
 // ---------------------------------------------------------------------------
 void DrumSynthEditor::setupKnob (juce::Slider& s, double lo, double hi, double def,
-                                  const juce::String& suffix)
+                                  const juce::String& suffix, int decimals)
 {
     s.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 80, 28);
-    s.setNumDecimalPlacesToDisplay (1);
+    s.setNumDecimalPlacesToDisplay (decimals);
     s.setRange (lo, hi);
     s.setValue (def, juce::dontSendNotification);
     if (suffix.isNotEmpty()) s.setTextValueSuffix (suffix);

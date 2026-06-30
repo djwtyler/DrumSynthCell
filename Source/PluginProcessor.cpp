@@ -10,7 +10,7 @@ DrumSynthProcessor::DrumSynthProcessor()
 {
     using VP = DrumSynth::VoiceParams;
 
-    // --- Kick (60 Hz bridged-T-style resonator ring, 2-octave pitch sweep) ---
+    // --- Kick (60 Hz bridged-T-style resonator ring, click + light drive) ---
     {
         auto& p = voices[DrumSynth::Kick].params;
         p.pitchHz        = 60.0f;
@@ -21,16 +21,24 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.ringDecay      = 0.35f;
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.04f;
-        p.noiseDecay     = 0.04f;
+        p.noiseLevel     = 0.12f;   // subtle click transient at the onset, layered under the ring
+        p.noiseDecay     = 0.03f;
         p.noiseBPFreq    = 600.0f;
         p.noiseBPQ       = 0.5f;
+        p.driveAmount    = 0.18f;   // light grit so the ring doesn't sound like a pure test tone
         p.driveType      = VP::DriveType::SoftClip;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 800.0f;
         p.filterResonance= 0.3f;
         p.env2Decay      = 0.06f;
         p.ampAttack      = 0.002f;
-        p.ampDecay       = 0.6f;
+        // Resonator's own ring decay and the Amp envelope's decay multiply
+        // together (sig already carries the ring's decay, then gets scaled
+        // by amp on top) - two multiplied exponentials compound to a
+        // SHORTER combined decay than either alone (1/(1/ring + 1/amp)).
+        // Keeping ampDecay near its max means Ring decay is what actually
+        // controls the audible length, as intended.
+        p.ampDecay       = 3.5f;
         p.outputGain     = 0.9f;
     }
     voices[DrumSynth::Kick].syncTransModFromParams();

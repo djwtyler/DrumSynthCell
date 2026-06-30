@@ -114,6 +114,10 @@ selected mode are shown.
 - **Partial Shaper**: Eight-partial additive engine. The spectral envelope is set by Peak + Roll; partials decay differentially using the Decay control; Membrane selects the frequency grid (only meaningful in this mode).
 - **Resonator**: A 2-pole digital filter excited by a single impulse at trigger time, then left to ring on its own poles — the DSP equivalent of an analog bridged-T feedback network biased just below self-oscillation (the actual TR-808 kick/tom tone circuit). Pitch sets the ring frequency; Ring sets how long it persists before decaying away. Used for the Kick preset. Deliberately **not** paired with an Env1→Pitch sweep: the real bridged-T circuit has no external pitch modulation, and sweeping the Resonator's frequency mid-ring re-tunes its ringing state (audible as a separate, unwanted blip) rather than gliding smoothly the way a phase-accumulating oscillator does. Pitch should stay fixed for this mode; Ring decay alone shapes the "boom."
 
+  **Important — decays multiply, don't just pick the larger one**: the Resonator's own ring decay and the Amp envelope's decay both apply to the same signal (`sig * amp`), so they compound — the audible decay time is `1 / (1/Ring + 1/AmpDecay)`, always *shorter* than either alone. With Ring=0.35s and AmpDecay=0.6s the kick actually only rings for ~0.22s, not 0.35s. To let Ring be the dominant, audible control, set AmpDecay near its max (e.g. 3-4s) so it gets out of the way; use Ring to set the actual perceived length.
+
+  A pure ring alone tends to sound like a clean test tone rather than a drum. The Kick preset layers in a small noise click (Level ~0.12, Decay ~0.03s, bandpassed around 600Hz) for the attack transient, and light Drive (~0.18, soft clip) for harmonic grit — both are part of what makes it read as a "kick" rather than a sine ping.
+
 ---
 
 ### NOISE Section

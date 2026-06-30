@@ -511,7 +511,7 @@ private:
     void timerCallback() override;
 
     void setupKnob (juce::Slider& s, double lo, double hi, double def,
-                    const juce::String& suffix = {});
+                    const juce::String& suffix = {}, int decimals = 1);
     void setupVSlider (juce::Slider& s, double lo, double hi, double def);
     void setupCombo (juce::ComboBox& b, const juce::StringArray& items);
 
