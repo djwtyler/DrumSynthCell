@@ -236,6 +236,15 @@ float DrumVoice::computeResonatorSample() noexcept
     const float y0 = 2.0f * r * std::cos (theta) * resY1 - r * r * resY2;
     resY2 = resY1;
     resY1 = y0;
+
+    // A single-pole exponential's *time constant* (set by ringDecay) is not
+    // its audible duration - reaching -60dB takes ~6.9 time constants, so an
+    // ungated ring stays technically present far longer than it sounds like
+    // it should. Hard-gate once both poles' state is clearly inaudible
+    // (~-80dB) so the ring actually stops rather than trailing off forever.
+    if (std::abs (resY1) < 1.0e-4f && std::abs (resY2) < 1.0e-4f)
+        resY1 = resY2 = 0.0f;
+
     return y0;
 }
 

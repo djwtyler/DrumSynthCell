@@ -10,7 +10,7 @@ DrumSynthProcessor::DrumSynthProcessor()
 {
     using VP = DrumSynth::VoiceParams;
 
-    // --- Kick (60 Hz bridged-T-style resonator ring, click + light drive) ---
+    // --- Kick (60 Hz bridged-T-style resonator ring - deliberately simple) ---
     {
         auto& p = voices[DrumSynth::Kick].params;
         p.pitchHz        = 60.0f;
@@ -18,27 +18,26 @@ DrumSynthProcessor::DrumSynthProcessor()
                                                        // equivalent of the 808's bridged-T
                                                        // feedback network biased just below
                                                        // self-oscillation
-        p.ringDecay      = 0.15f;    // shorter, punchier ring - 0.35s was too boomy/sustained
+        // No separate noise click or drive - the real 808 kick is a clean
+        // sound; its punch comes from the bridged-T circuit's own fast
+        // attack (which we now have correctly since the resonator's
+        // frequency-dependent amplitude bug was fixed), not from a layered
+        // broadband transient. Adding one back on top was working against
+        // the "clean" character, not toward authenticity.
+        p.ringDecay      = 0.05f;    // time constant, not audible duration - see computeResonatorSample's
+                                       // hard gate; ~0.05s here means audible down to roughly 0.2-0.3s total
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.04f;
-        p.noiseLevel     = 0.25f;    // louder click - needs to read as a distinct transient, not a texture
-        p.noiseDecay     = 0.015f;   // tight, fast click
-        p.noiseBPFreq    = 2200.0f;  // brighter, separated from the ~60Hz body so it reads as "snap" not boom
-        p.noiseBPQ       = 0.6f;
-        p.driveAmount    = 0.18f;   // light grit so the ring doesn't sound like a pure test tone
-        p.driveType      = VP::DriveType::SoftClip;
         p.filterMode     = VP::FilterMode::LP;
-        p.filterCutoff   = 1500.0f;  // raised from 800Hz so the click's transient brightness isn't rolled off
-        p.filterResonance= 0.15f;    // lower resonance - 0.3 was emphasizing a narrow band, adding to the boom
+        p.filterCutoff   = 1200.0f;
+        p.filterResonance= 0.1f;
         p.env2Decay      = 0.06f;
         p.ampAttack      = 0.001f;   // fastest possible attack for the hardest transient onset
-        // Resonator's own ring decay and the Amp envelope's decay multiply
-        // together (sig already carries the ring's decay, then gets scaled
-        // by amp on top) - two multiplied exponentials compound to a
-        // SHORTER combined decay than either alone (1/(1/ring + 1/amp)).
-        // Keeping ampDecay near its max means Ring decay is what actually
-        // controls the audible length, as intended.
-        p.ampDecay       = 3.5f;
+        // ampDecay just needs to be comfortably longer than ringDecay so
+        // Ring is what actually controls the audible length (compounding:
+        // 1/(1/ring + 1/amp)) - doesn't need to be extreme now that ring
+        // itself is short.
+        p.ampDecay       = 1.0f;
         p.outputGain     = 0.9f;
     }
     voices[DrumSynth::Kick].syncTransModFromParams();
