@@ -79,6 +79,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (partRollKnob,    0.0,  1.0,  0.5);
     setupKnob (partDecKnob,     0.0,  1.0,  0.5);
     setupKnob (ringDecayKnob,   0.01, 2.0,  0.3, " s");
+    ringDecayKnob.setSkewFactorFromMidPoint (0.3);   // most 808-ish rings live in 0.1-0.5s
     setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
     setupKnob (noiseDecKnob,    0.001,2.0,  0.1);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");

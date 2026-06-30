@@ -105,14 +105,14 @@ selected mode are shown.
 | Roll            | Partial Shaper   | Spectral rolloff rate away from the peak partial                            |
 | Decay           | Partial Shaper   | Differential decay — higher partials fade faster; 0 = equal decay, 1 = 5× faster per octave |
 | Membrane        | Partial Shaper   | Selects inharmonic Bessel ratios (drumskin physics) vs integer harmonics — not applicable to Single or Metallic Cluster |
-| Ring            | Resonator only   | How long the impulse-excited ring persists (TransMod target), 0.01 – 2 s    |
+| Ring            | Resonator only   | How long the impulse-excited ring persists (TransMod target), 0.01 – 2 s, 0.3s at 12 o'clock |
 
 #### Oscillator Modes (mutually exclusive)
 
 - **Single** (default): Shape knob morphs the waveform continuously, 0=Sine, 1/3=Triangle, 2/3=Saw, 1.0=Square.
 - **Metallic Cluster**: Six detuned square oscillators at ratios 1.000, 1.483, 2.000, 2.501, 2.999, 3.501 relative to the base pitch. No other OSC controls apply. Used for 808 hats and cymbals.
 - **Partial Shaper**: Eight-partial additive engine. The spectral envelope is set by Peak + Roll; partials decay differentially using the Decay control; Membrane selects the frequency grid (only meaningful in this mode).
-- **Resonator**: A 2-pole digital filter excited by a single impulse at trigger time, then left to ring on its own poles — the DSP equivalent of an analog bridged-T feedback network biased just below self-oscillation (the actual TR-808 kick/tom tone circuit). Pitch sets the ring frequency; Ring sets how long it persists before decaying away. Used for the Kick preset, typically layered with an Env1→Pitch sweep for the classic descending "blip" on top of the ring.
+- **Resonator**: A 2-pole digital filter excited by a single impulse at trigger time, then left to ring on its own poles — the DSP equivalent of an analog bridged-T feedback network biased just below self-oscillation (the actual TR-808 kick/tom tone circuit). Pitch sets the ring frequency; Ring sets how long it persists before decaying away. Used for the Kick preset. Deliberately **not** paired with an Env1→Pitch sweep: the real bridged-T circuit has no external pitch modulation, and sweeping the Resonator's frequency mid-ring re-tunes its ringing state (audible as a separate, unwanted blip) rather than gliding smoothly the way a phase-accumulating oscillator does. Pitch should stay fixed for this mode; Ring decay alone shapes the "boom."
 
 ---
 

@@ -34,9 +34,11 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.outputGain     = 0.9f;
     }
     voices[DrumSynth::Kick].syncTransModFromParams();
-    // Recreate the classic kick pitch/filter sweep via TransMod (Env1->Pitch, Env2->Filter)
-    voices[DrumSynth::Kick].transmod.get (ModTarget::PitchHz)
-        .depths[(int) ModSource::Env1] = 0.09f;
+    // No Env1->Pitch sweep here: the real bridged-T circuit has no external
+    // pitch modulation (it's just excited below self-oscillation; decay
+    // controls ring length), and sweeping the Resonator's frequency mid-ring
+    // re-tunes its ringing state rather than gliding smoothly like a phase-
+    // accumulating oscillator would - audible as a separate, unwanted blip.
     voices[DrumSynth::Kick].transmod.get (ModTarget::FilterCutoff)
         .depths[(int) ModSource::Env2] = 0.04f;
 
