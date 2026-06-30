@@ -10,11 +10,15 @@ DrumSynthProcessor::DrumSynthProcessor()
 {
     using VP = DrumSynth::VoiceParams;
 
-    // --- Kick (60 Hz sine, 2-octave pitch sweep) ---
+    // --- Kick (60 Hz bridged-T-style resonator ring, 2-octave pitch sweep) ---
     {
         auto& p = voices[DrumSynth::Kick].params;
         p.pitchHz        = 60.0f;
-        p.oscShape       = 0.0f;          // sine (oscMode defaults to Single)
+        p.oscMode        = VP::OscMode::Resonator;   // impulse-excited ring, the digital
+                                                       // equivalent of the 808's bridged-T
+                                                       // feedback network biased just below
+                                                       // self-oscillation
+        p.ringDecay      = 0.35f;
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.04f;
         p.noiseDecay     = 0.04f;
@@ -284,6 +288,7 @@ void DrumSynthProcessor::getStateInformation (juce::MemoryBlock& destData)
         v.setProperty ("partialSpace",    p.partialSpace,                 nullptr);
         v.setProperty ("partialRoll",     p.partialRoll,                  nullptr);
         v.setProperty ("partialDecay",    p.partialDecay,                 nullptr);
+        v.setProperty ("ringDecay",       p.ringDecay,                    nullptr);
         v.setProperty ("membraneMode",    p.membraneMode,                 nullptr);
         v.setProperty ("env1Attack",      p.env1Attack,                   nullptr);
         v.setProperty ("env1Hold",        p.env1Hold,                     nullptr);
@@ -364,6 +369,7 @@ void DrumSynthProcessor::setStateInformation (const void* data, int sizeInBytes)
         p.partialSpace   = float (v.getProperty ("partialSpace",   p.partialSpace));
         p.partialRoll    = float (v.getProperty ("partialRoll",    p.partialRoll));
         p.partialDecay   = float (v.getProperty ("partialDecay",   p.partialDecay));
+        p.ringDecay      = float (v.getProperty ("ringDecay",      p.ringDecay));
         p.membraneMode   = bool  (v.getProperty ("membraneMode",   p.membraneMode));
         p.env1Attack     = float (v.getProperty ("env1Attack",     p.env1Attack));
         p.env1Hold       = float (v.getProperty ("env1Hold",       p.env1Hold));

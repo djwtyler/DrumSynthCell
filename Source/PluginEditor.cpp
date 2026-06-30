@@ -36,7 +36,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupCombo (filterModeBox, { "LP", "HP", "BP", "Peak", "Notch" });
     setupCombo (filterModelBox,{ "Clean", "Fat" });
     setupCombo (fx1TypeBox,    { "Off", "Soft Clip", "Hard Clip", "Bitcrusher", "Wavefold" });
-    setupCombo (oscModeBox,    { "Single", "Metallic Cluster", "Partial Shaper" });
+    setupCombo (oscModeBox,    { "Single", "Metallic Cluster", "Partial Shaper", "Resonator" });
 
     // Knob ranges
     setupKnob (pitchKnob,       20.0, 20000.0, 80.0, " Hz");
@@ -59,6 +59,7 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (partSpaceKnob,   0.0,  1.0,  0.5);
     setupKnob (partRollKnob,    0.0,  1.0,  0.5);
     setupKnob (partDecKnob,     0.0,  1.0,  0.5);
+    setupKnob (ringDecayKnob,   0.01, 2.0,  0.3, " s");
     setupKnob (noiseLevelKnob,  0.0,  1.0,  0.0);
     setupKnob (noiseDecKnob,    0.001,4.0,  0.1);
     setupKnob (noiseBPFreqKnob, 100.0,20000.0, 8000.0, " Hz");
@@ -217,6 +218,7 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (partRollKnob);
     addChildComponent (partDecKnob);
     addChildComponent (membraneBtn);
+    addChildComponent (ringDecayKnob);
 
     // NOISE
     addChildComponent (noiseLevelKnob);
@@ -276,7 +278,7 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (playLoopBtn);
 
     // Per-knob labels for advanced view
-    static const char* kAdvLblText[30] = {
+    static const char* kAdvLblText[31] = {
         "Pitch", "Shape", "Peak", "Space", "Roll", "Decay", // OSC 0-5
         "Level", "Decay", "BP Freq", "BP Q",                // NOISE 6-9
         "Amount",                                            // DRIVE 10
@@ -287,9 +289,10 @@ void DrumSynthEditor::buildAdvancedView()
         "Rate", "Rate",                                      // LFO1/2 22-23
         "Amount", "Bit Dep",                                 // FX 24-25
         "Vol",                                                // MASTER 26
-        "Osc", "Noise", "PCM"                                 // MIXER 27-29
+        "Osc", "Noise", "PCM",                                // MIXER 27-29
+        "Ring"                                                // OSC (Resonator only) 30
     };
-    for (int i = 0; i < 30; ++i)
+    for (int i = 0; i < 31; ++i)
     {
         advLbl[i].setText (kAdvLblText[i], juce::dontSendNotification);
         advLbl[i].setJustificationType (juce::Justification::centred);
@@ -366,6 +369,7 @@ void DrumSynthEditor::buildAdvancedView()
         { &partSpaceKnob,   ModTarget::PartialSpace },
         { &partRollKnob,    ModTarget::PartialRoll },
         { &partDecKnob,     ModTarget::PartialDecay },
+        { &ringDecayKnob,   ModTarget::RingDecay },
         { &env1AttKnob,     ModTarget::Env1Attack },
         { &env1HoldKnob,    ModTarget::Env1Hold },
         { &env1DecKnob,     ModTarget::Env1Decay },
@@ -431,7 +435,7 @@ void DrumSynthEditor::showBasicView()
     for (auto& b : modSrcBtns)  b.setVisible (false);
     for (auto* c : std::initializer_list<juce::Component*> {
                      &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
-                     &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
+                     &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn, &ringDecayKnob,
                      &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob, &noiseLevelKnob,
@@ -470,7 +474,7 @@ void DrumSynthEditor::showAdvancedView()
     for (auto& b : modSrcBtns)  b.setVisible (true);
     for (auto* c : std::initializer_list<juce::Component*> {
                      &pitchKnob, &oscModeBox, &oscShapeKnob, &oscShapeDisplay,
-                     &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn,
+                     &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn, &ringDecayKnob,
                      &noiseDecKnob, &noiseBPFreqKnob, &noiseBPQKnob, &noisePinkBtn,
                      &driveAmtKnob, &driveTypeBox,
                      &filterModeBox, &filterModelBox, &filter4PoleBtn, &filterCutKnob, &filterResKnob, &noiseLevelKnob,
@@ -570,9 +574,12 @@ void DrumSynthEditor::layoutAdvancedView()
         oscModeBox      .setBounds (x, y, kOscW - 14, 26);
         y += 34;
 
-        lbl (0, x,         y + 22);  lbl (1, x + C + G, y + 22);
+        lbl (0, x,         y + 22);  lbl (1, x + C + G, y + 22);  lbl (30, x + C + G, y + 22);
         pitchKnob       .setBounds (x,         y + 22, C, C);
         oscShapeKnob    .setBounds (x + C + G, y + 22, C, C);
+        // Shares the Shape knob's slot — mutually exclusive (Shape: Single
+        // only, Ring: Resonator only)
+        ringDecayKnob   .setBounds (x + C + G, y + 22, C, C);
         y += 22 + C + 6;
 
         // oscShapeDisplay and the Partial Shaper knobs below share this same
@@ -883,8 +890,9 @@ void DrumSynthEditor::updateOscModeVisibility()
 
     using OM = DrumSynth::VoiceParams::OscMode;
     auto mode = proc.getVoice (selectedChannel).params.oscMode;
-    bool single = (mode == OM::Single);
-    bool shaper = (mode == OM::PartialShaper);
+    bool single    = (mode == OM::Single);
+    bool shaper    = (mode == OM::PartialShaper);
+    bool resonator = (mode == OM::Resonator);
 
     oscShapeKnob.setVisible (single);
     oscShapeDisplay.setVisible (single);   // waveform graphic only means anything in Single mode
@@ -894,6 +902,9 @@ void DrumSynthEditor::updateOscModeVisibility()
                      &partPeakKnob, &partSpaceKnob, &partRollKnob, &partDecKnob, &membraneBtn })
         c->setVisible (shaper);
     for (int i = 2; i <= 5; ++i) advLbl[i].setVisible (shaper);   // "Peak","Space","Roll","Decay"
+
+    ringDecayKnob.setVisible (resonator);
+    advLbl[30].setVisible (resonator);   // "Ring"
 
     if (single)
         oscShapeDisplay.setShape (float (oscShapeKnob.getValue()));

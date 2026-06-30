@@ -17,6 +17,7 @@ enum class ModTarget : int {
     PartialSpace,
     PartialRoll,
     PartialDecay,
+    RingDecay,
     Env1Attack,
     Env1Hold,
     Env1Decay,
@@ -52,6 +53,7 @@ static constexpr ModTargetRange kModRanges[kNumModTargets] = {
     {    0.f,       1.f },   // PartialSpace
     {    0.f,       1.f },   // PartialRoll
     {    0.f,       1.f },   // PartialDecay
+    {  0.01f,       2.f },   // RingDecay
     {0.001f,       1.f  },   // Env1Attack
     {    0.f,       1.f },   // Env1Hold
     {0.001f,       2.f  },   // Env1Decay

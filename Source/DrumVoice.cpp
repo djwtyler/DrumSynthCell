@@ -29,6 +29,7 @@ static constexpr ModBinding kModBindings[] = {
     { ModTarget::PartialSpace,    &VoiceParams::partialSpace    },
     { ModTarget::PartialRoll,     &VoiceParams::partialRoll     },
     { ModTarget::PartialDecay,    &VoiceParams::partialDecay    },
+    { ModTarget::RingDecay,       &VoiceParams::ringDecay       },
     { ModTarget::Env1Attack,      &VoiceParams::env1Attack      },
     { ModTarget::Env1Hold,        &VoiceParams::env1Hold        },
     { ModTarget::Env1Decay,       &VoiceParams::env1Decay       },
@@ -78,6 +79,7 @@ void DrumVoice::trigger (float vel)
     oscPhase  = 0.0;
     metalPhases .fill (0.0);
     partialPhases.fill (0.0);
+    resY1 = 1.0f; resY2 = 0.0f;   // single impulse excitation for the resonator
     pinkB[0] = pinkB[1] = pinkB[2] = 0.0f;
 
     lfo1.reset();
@@ -209,6 +211,23 @@ float DrumVoice::computePartialSample() noexcept
     return sum;
 }
 
+float DrumVoice::computeResonatorSample() noexcept
+{
+    // Digital resonator: a 2-pole filter excited by a single impulse at
+    // trigger() (resY1/resY2 seeded there), then left to ring freely on
+    // its own poles - the DSP equivalent of an analog bridged-T feedback
+    // network biased just below self-oscillation (TR-808 kick/tom tone
+    // circuit). Pole radius r stays < 1 for stability; the closer to 1,
+    // the longer (and closer to self-oscillating) the ring.
+    const float theta = juce::MathConstants<float>::twoPi * params.pitchHz / float (sampleRate);
+    const float r     = std::exp (-1.0f / (float (sampleRate) * juce::jmax (0.01f, params.ringDecay)));
+
+    const float y0 = 2.0f * r * std::cos (theta) * resY1 - r * r * resY2;
+    resY2 = resY1;
+    resY1 = y0;
+    return y0;
+}
+
 float DrumVoice::computeNoiseSample() noexcept
 {
     float white = rng.nextFloat() * 2.0f - 1.0f;
@@ -310,9 +329,10 @@ void DrumVoice::process (float* dest, int numSamples)
         float osc = 0.0f;
         switch (params.oscMode)
         {
-            case VoiceParams::OscMode::Metallic:      osc = computeMetallicSample(); break;
-            case VoiceParams::OscMode::PartialShaper: osc = computePartialSample();  break;
-            case VoiceParams::OscMode::Single:        osc = computeOscSample();      break;
+            case VoiceParams::OscMode::Metallic:      osc = computeMetallicSample();  break;
+            case VoiceParams::OscMode::PartialShaper: osc = computePartialSample();   break;
+            case VoiceParams::OscMode::Resonator:     osc = computeResonatorSample(); break;
+            case VoiceParams::OscMode::Single:        osc = computeOscSample();       break;
         }
 
         const float noiseEnv = noiseEnvValue;

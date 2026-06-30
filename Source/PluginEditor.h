@@ -358,6 +358,7 @@ private:
     juce::Slider       partPeakKnob,  partSpaceKnob,    // Partial Shaper only
                        partRollKnob,  partDecKnob;
     juce::ToggleButton membraneBtn  { "Membrane" };      // Partial Shaper only
+    juce::Slider       ringDecayKnob;                    // Resonator only
 
     // == NOISE section ==
     // Level is the generator's own modulatable level (TransMod target) —
@@ -413,7 +414,8 @@ private:
     // Per-knob name labels for advanced view, ordered by panel
     // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
     // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26  MIXER:27-29 (Osc/Noise/PCM)
-    juce::Label advLbl[30];
+    // 30=Ring (OSC, Resonator only)
+    juce::Label advLbl[31];
 
     // ---------------------------------------------------------------
     // Layout constants

@@ -18,10 +18,10 @@ enum ChokeGroup   { None = 0, A, B, C };
 struct VoiceParams
 {
     // --- Oscillator ---
-    // The three modes are mutually exclusive — exactly one generates the
+    // The four modes are mutually exclusive — exactly one generates the
     // voice's tonal component. oscShape only applies to Single; partial*/
-    // membraneMode only apply to PartialShaper.
-    enum class OscMode { Single, Metallic, PartialShaper } oscMode = OscMode::Single;
+    // membraneMode only apply to PartialShaper; ringDecay only to Resonator.
+    enum class OscMode { Single, Metallic, PartialShaper, Resonator } oscMode = OscMode::Single;
     float pitchHz   = 80.0f;
     float oscShape  = 0.0f;   // 0=Sine 0.33=Saw 0.66=Square 1.0=Tri (Single only)
 
@@ -31,6 +31,13 @@ struct VoiceParams
     float partialRoll   = 0.5f;  // 0-1: spectral rolloff away from peak
     float partialDecay  = 0.5f;  // 0-1: differential high-partial decay rate
     bool  membraneMode  = true;  // true=inharmonic drumskin, false=even harmonics
+
+    // --- Resonator (only used when oscMode == Resonator) ---
+    // A 2-pole filter excited by a single impulse at trigger() and left to
+    // ring freely - the digital equivalent of an analog bridged-T feedback
+    // network biased just below self-oscillation (the TR-808 kick/tom tone
+    // circuit). ringDecay sets how long the ring persists.
+    float ringDecay = 0.3f;
 
     // --- Env 1 (general purpose — TransMod source only) ---
     float env1Attack = 0.005f;
@@ -291,6 +298,7 @@ private:
     double oscPhase = 0.0;
     std::array<double, 6> metalPhases  {};   // metallic cluster (808 hats)
     std::array<double, 8> partialPhases {};  // harmonic partial shaper
+    float resY1 = 0.0f, resY2 = 0.0f;        // resonator ring state
 
     // Partial shaper spectral state
     std::array<float, 8> partialWeights      {};  // evolve over time via differential decay
@@ -321,6 +329,7 @@ private:
     float computeOscSample     ()                         noexcept;
     float computeMetallicSample()                         noexcept;
     float computePartialSample ()                         noexcept;
+    float computeResonatorSample()                        noexcept;
     float computeNoiseSample   ()                         noexcept;
     float applyDrive           (float in)          const noexcept;
     float applyFilter          (float in, float cutHz)    noexcept;
