@@ -367,6 +367,12 @@ private:
     MasterMeter        masterMeter;
     juce::Label        masterHdr { {}, "MASTER" };
 
+    // Auditions the selected channel once a second while toggled on, so the
+    // sound can be sculpted without repeatedly clicking the pad
+    juce::TextButton   playLoopBtn { "Play" };
+    bool               playLoopOn  = false;
+    juce::uint32       lastPlayLoopMs = 0;
+
     // Per-knob name labels for advanced view, ordered by panel
     // OSC:0-5  NOISE:6-9  DRIVE:10  FILTER:11-12
     // ENV:13-21  LFO:22-23  FX:24-25  MASTER:26

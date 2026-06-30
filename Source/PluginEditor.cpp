@@ -67,15 +67,15 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     setupKnob (filterCutKnob,   20.0, 20000.0, 12000.0, " Hz");
     filterCutKnob.setSkewFactorFromMidPoint (1000.0);   // 1000Hz at 12 o'clock
     setupKnob (filterResKnob,   0.0,  1.0,  0.5);
-    setupKnob (env1AttKnob,     0.001,2.0,  0.005," s");
-    setupKnob (env1HoldKnob,    0.0,  2.0,  0.0,  " s");
-    setupKnob (env1DecKnob,     0.001,4.0,  0.05, " s");
+    setupKnob (env1AttKnob,     0.001,1.0,  0.005," s");
+    setupKnob (env1HoldKnob,    0.0,  1.0,  0.0,  " s");
+    setupKnob (env1DecKnob,     0.001,2.0,  0.05, " s");
     setupKnob (env2AttKnob,     0.001,2.0,  0.005," s");
     setupKnob (env2HoldKnob,    0.0,  2.0,  0.0,  " s");
     setupKnob (env2DecKnob,     0.001,4.0,  0.3,  " s");
-    setupKnob (ampAttKnob,      0.001,2.0,  0.002," s");
-    setupKnob (ampHoldKnob,     0.0,  2.0,  0.0,  " s");
-    setupKnob (ampDecKnob,      0.001,8.0,  0.5,  " s");
+    setupKnob (ampAttKnob,      0.001,1.0,  0.002," s");
+    setupKnob (ampHoldKnob,     0.0,  1.0,  0.0,  " s");
+    setupKnob (ampDecKnob,      0.001,4.0,  0.5,  " s");
     setupKnob (lfo1RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (lfo2RateKnob,    0.1,  10.0, 1.0, " Hz");
     setupKnob (fx1AmtKnob,      0.0,  1.0,  0.5);
@@ -91,9 +91,9 @@ DrumSynthEditor::DrumSynthEditor (DrumSynthProcessor& p)
     }
     setupKnob (macroKnobs[0], 20.0,    20000.0, 80.0,  " Hz");  // Tune
     macroKnobs[0].setSkewFactorFromMidPoint (300.0);
-    setupKnob (macroKnobs[1],  0.001,  4.0,     0.05,  " s");   // Env 1 decay
-    setupKnob (macroKnobs[2],  0.001,  2.0,     0.002, " s");   // Attack
-    setupKnob (macroKnobs[3],  0.001,  8.0,     0.5,   " s");   // Decay
+    setupKnob (macroKnobs[1],  0.001,  2.0,     0.05,  " s");   // Env 1 decay
+    setupKnob (macroKnobs[2],  0.001,  1.0,     0.002, " s");   // Attack
+    setupKnob (macroKnobs[3],  0.001,  4.0,     0.5,   " s");   // Decay
     setupKnob (macroKnobs[4],  0.0,    1.0,     0.8);            // Volume
     setupKnob (macroKnobs[5],  0.0,    1.0,     0.0);            // Noise
     setupKnob (macroKnobs[6],  20.0,   20000.0, 12000.0," Hz"); // Flt Cut
@@ -252,6 +252,7 @@ void DrumSynthEditor::buildAdvancedView()
     addChildComponent (limiterBtn);
     addChildComponent (masterMeter);
     addChildComponent (masterHdr);
+    addChildComponent (playLoopBtn);
 
     // Per-knob labels for advanced view
     static const char* kAdvLblText[27] = {
@@ -300,6 +301,21 @@ void DrumSynthEditor::buildAdvancedView()
     limiterBtn.setColour (juce::ToggleButton::textColourId,         kTextDark);
     limiterBtn.setColour (juce::ToggleButton::tickColourId,         juce::Colours::white);
     limiterBtn.setColour (juce::ToggleButton::tickDisabledColourId, kDim);
+
+    playLoopBtn.setClickingTogglesState (true);
+    playLoopBtn.setColour (juce::TextButton::buttonColourId, kPadActive);
+    playLoopBtn.setColour (juce::TextButton::buttonOnColourId, kAccent);
+    playLoopBtn.setColour (juce::TextButton::textColourOffId, kText);
+    playLoopBtn.setColour (juce::TextButton::textColourOnId, juce::Colours::black);
+    playLoopBtn.onClick = [this]
+    {
+        playLoopOn = playLoopBtn.getToggleState();
+        if (playLoopOn)
+        {
+            proc.getVoice (selectedChannel).trigger (1.0f);
+            lastPlayLoopMs = juce::Time::getMillisecondCounter();
+        }
+    };
 
     // TransMod source selection buttons
     static const char* kSrcNames[kNumModSources] = { "LFO 1", "LFO 2", "Env 1", "Env 2", "Vel" };
@@ -404,7 +420,7 @@ void DrumSynthEditor::showBasicView()
                      &lfo1RateKnob, &lfo1WaveBox,
                      &lfo2RateKnob, &lfo2WaveBox,
                      &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob,
-                     &masterVolKnob, &limiterBtn, &masterMeter, &masterHdr })
+                     &masterVolKnob, &limiterBtn, &masterMeter, &masterHdr, &playLoopBtn })
         c->setVisible (false);
 
     refreshMacros();
@@ -442,7 +458,7 @@ void DrumSynthEditor::showAdvancedView()
                      &lfo1RateKnob, &lfo1WaveBox,
                      &lfo2RateKnob, &lfo2WaveBox,
                      &fx1TypeBox, &fx1AmtKnob, &bitDepthKnob,
-                     &masterVolKnob, &limiterBtn, &masterMeter, &masterHdr })
+                     &masterVolKnob, &limiterBtn, &masterMeter, &masterHdr, &playLoopBtn })
         c->setVisible (true);
 
     updatePadHighlight();
@@ -673,6 +689,7 @@ void DrumSynthEditor::layoutAdvancedView()
         lbl (26, mx + 160, fxY);
         masterVolKnob.setBounds (mx + 160,         fxY, C, C);
         masterMeter  .setBounds (mx + 160 + C + G, fxY, 28, C);
+        playLoopBtn  .setBounds (mx + 160 + C + G + 28 + 16, fxY + (C - 26) / 2, 64, 26);
     }
 }
 
@@ -927,6 +944,16 @@ void DrumSynthEditor::setTransModKnobProps (juce::Slider& s, ModTarget t)
 void DrumSynthEditor::timerCallback()
 {
     masterMeter.setLevel (proc.getMasterPeakLevel());
+
+    if (playLoopOn)
+    {
+        const auto now = juce::Time::getMillisecondCounter();
+        if (now - lastPlayLoopMs >= 1000)
+        {
+            proc.getVoice (selectedChannel).trigger (1.0f);
+            lastPlayLoopMs = now;
+        }
+    }
 
     // Only knobs that actually carry a routing need to animate; refreshing
     // (and repainting) all ~36 knobs at 30Hz regardless was needlessly

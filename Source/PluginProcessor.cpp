@@ -10,18 +10,16 @@ DrumSynthProcessor::DrumSynthProcessor()
 {
     using VP = DrumSynth::VoiceParams;
 
-    // --- Kick (60 Hz sine, 2-octave pitch sweep, light pre-filter drive) ---
+    // --- Kick (60 Hz sine, 2-octave pitch sweep) ---
     {
         auto& p = voices[DrumSynth::Kick].params;
         p.pitchHz        = 60.0f;
         p.oscShape       = 0.0f;          // sine (oscMode defaults to Single)
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.04f;
-        p.noiseLevel     = 0.05f;
         p.noiseDecay     = 0.04f;
         p.noiseBPFreq    = 600.0f;
         p.noiseBPQ       = 0.5f;
-        p.driveAmount    = 0.2f;
         p.driveType      = VP::DriveType::SoftClip;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 800.0f;
@@ -38,13 +36,12 @@ DrumSynthProcessor::DrumSynthProcessor()
     voices[DrumSynth::Kick].transmod.get (ModTarget::FilterCutoff)
         .depths[(int) ModSource::Env2] = 0.04f;
 
-    // --- Snare (180 Hz + white noise, slight pitch drop) ---
+    // --- Snare (180 Hz tone, slight pitch drop) ---
     {
         auto& p = voices[DrumSynth::Snare].params;
         p.pitchHz        = 180.0f;
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.02f;
-        p.noiseLevel     = 0.8f;
         p.noiseDecay     = 0.2f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 3000.0f;
@@ -60,13 +57,12 @@ DrumSynthProcessor::DrumSynthProcessor()
     voices[DrumSynth::Snare].transmod.get (ModTarget::PitchHz)
         .depths[(int) ModSource::Env1] = 0.04f;
 
-    // --- Clap (noise burst, square wave body) ---
+    // --- Clap (square wave body) ---
     {
         auto& p = voices[DrumSynth::Clap].params;
         p.pitchHz        = 900.0f;
         p.oscShape       = 0.66f;         // square
         p.oscLevel       = 0.15f;
-        p.noiseLevel     = 1.0f;
         p.noiseDecay     = 0.12f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 1200.0f;
@@ -91,7 +87,6 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.membraneMode   = true;
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.03f;
-        p.noiseLevel     = 0.1f;
         p.noiseDecay     = 0.05f;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 600.0f;
@@ -115,7 +110,6 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.membraneMode   = true;
         p.env1Attack     = 0.001f;
         p.env1Decay      = 0.03f;
-        p.noiseLevel     = 0.1f;
         p.noiseDecay     = 0.05f;
         p.filterMode     = VP::FilterMode::LP;
         p.filterCutoff   = 500.0f;
@@ -133,7 +127,6 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.pitchHz        = 8000.0f;
         p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.4f;
-        p.noiseLevel     = 0.6f;
         p.noiseDecay     = 0.05f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 10000.0f;
@@ -153,7 +146,6 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.pitchHz        = 8000.0f;
         p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.35f;
-        p.noiseLevel     = 0.7f;
         p.noiseDecay     = 0.5f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 9000.0f;
@@ -173,7 +165,6 @@ DrumSynthProcessor::DrumSynthProcessor()
         p.pitchHz        = 5000.0f;
         p.oscMode        = VP::OscMode::Metallic;
         p.oscLevel       = 0.25f;
-        p.noiseLevel     = 0.85f;
         p.noiseDecay     = 1.0f;
         p.noiseColor     = VP::NoiseColor::White;
         p.noiseBPFreq    = 8000.0f;
